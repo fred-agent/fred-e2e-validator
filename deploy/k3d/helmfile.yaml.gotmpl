@@ -1,0 +1,42 @@
+# The local deployment supplies the target environment, application origin
+# and image. The local chart values supply the remaining test settings.
+environments:
+  {{ requiredEnv "FRED" }}: {}
+---
+helmDefaults:
+  kubeContext: k3d-fred
+  wait: true
+  timeout: 900
+  historyMax: 10
+
+releases:
+  - name: fred-e2e-tests
+    namespace: fred-{{ .Environment.Name }}
+    chart: ../charts/fred-e2e-tests
+    values:
+      - values-local.yaml
+      {{- with env "K3D_IMAGE_VALUES" }}
+      - {{ . | quote }}
+      {{- end }}
+    set:
+      - name: envConfig.fredBaseUrl
+        value: {{ requiredEnv "FRED_BASE_URL" | quote }}
+    hooks:
+      - events: [presync]
+        command: ./check-accounts
+        {{- if eq .Environment.Name "default" }}
+        args: [--default]
+        {{- end }}
+      - events: [presync]
+        command: kubectl
+        args:
+          - --context=k3d-fred
+          - --namespace=fred-{{ .Environment.Name }}
+          - delete
+          - deployments.apps
+          - --field-selector=metadata.name=fred-e2e-tests
+          - --selector=app.kubernetes.io/name=fred-e2e-tests,app.kubernetes.io/instance=fred-e2e-tests
+          - --cascade=foreground
+          - --wait=true
+          - --timeout=15m
+          - --ignore-not-found=true

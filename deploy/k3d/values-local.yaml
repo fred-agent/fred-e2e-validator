@@ -1,0 +1,20 @@
+# The local release supplies the application origin separately.
+envConfig:
+  # .env holds two account sets.
+  workers: 2
+  browser: chromium
+  testTimeout: 120000
+  expectTimeout: 15000
+  factoryFixtureTimeout: 120000
+  excludeTags: []
+
+accounts:
+  existingSecret: fred-e2e-tests-accounts # pragma: allowlist secret
+
+# How many of each team's newest finished runs are kept with their reports.
+keepRuns: 10
+
+# Forward loopback traffic to the cluster ingress, as the local load balancer
+# does for connections from the host.
+localRelay:
+  ingress: traefik.kube-system.svc.cluster.local:80

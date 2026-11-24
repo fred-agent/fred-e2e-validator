@@ -1,0 +1,6 @@
+apiVersion: v2
+name: fred-e2e-tests
+description: Runs the end-to-end tests inside a Fred test environment, started from the run page in Fred.
+type: application
+version: 0.2.0
+appVersion: "0.2.0"

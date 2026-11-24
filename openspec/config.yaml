@@ -1,0 +1,22 @@
+schema: spec-driven
+
+context: |
+  Language: English.
+  Project: a standard Playwright Test project of end-to-end tests for Fred
+  test environments with synthetic test accounts, in TypeScript; page
+  objects and components hold every locator. The layout is in README.md;
+  the design and the rules for test files are in the design.md of the
+  change being built, ARCHITECTURE.md and WRITING-TESTS.md.
+  No cryptography: Fred verifies tokens, and nothing in the project creates,
+  signs, verifies or exchanges one.
+  Keep requirements short and practical. Every document describes the
+  project as it is, with no history or narrative, in a neutral, impersonal
+  register and Playwright's own terms, and links to
+  https://playwright.dev/docs/intro for how to use Playwright.
+
+rules:
+  proposal:
+    - Keep it short; name non-goals.
+  tasks:
+    - One task group per stage; each stage ends with its verification (the checks before a commit and the tests it adds).
+    - Name the Playwright documentation page a task relies on.
