@@ -12,8 +12,8 @@ planned tests and timeouts.
 Every test file SHALL be `tests/<area>/<name>.spec.ts`, begin with a comment
 that says which part of Fred it covers and its source, and hold one
 top-level `test.describe`. Tests are grouped in a `test.describe` per rule
-of the product, and the only tags are `@smoke`, `@model` and `@ppt`:
-conventions of `WRITING-TESTS.md`.
+of the product, and the only tags are `@smoke`, `@model`, `@ppt` and
+`@extended`: conventions of `WRITING-TESTS.md`.
 
 #### Scenario: Listing the tests
 

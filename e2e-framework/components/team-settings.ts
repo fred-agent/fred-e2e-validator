@@ -34,12 +34,6 @@ export class TeamSettings {
     return this.page.getByRole("link", { name, exact: true });
   }
 
-  /** Members with access to the member list see "Settings" after the team record loads. */
-  @step
-  async expectSettingsShown(): Promise<void> {
-    await expect(this.openButton).toBeVisible();
-  }
-
   @step
   async open(): Promise<void> {
     await this.openButton.click();

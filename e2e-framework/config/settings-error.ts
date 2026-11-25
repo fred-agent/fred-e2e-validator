@@ -1,5 +1,5 @@
 // The error of a setting that is missing or wrong, in .env, env-config.json,
-// test-data/test-data.json or the service's environment.
+// sign-in.json, test-data/test-data.json or the service's environment.
 
 /** A setting that is missing or wrong; its message lists every problem. */
 export class SettingsError extends Error {

@@ -1,11 +1,17 @@
 import { expect, type Locator, type Page } from "@playwright/test";
 import { step } from "../pages/step.ts";
 import { MoreActionsMenu } from "./more-actions-menu.ts";
-import { literal } from "./text-patterns.ts";
+import { endingWith, literal } from "./text-patterns.ts";
 
 /** The options of an agent card's "More actions", by their labels. */
 export type AgentAction =
-  "Edit" | "Deactivate" | "Activate" | "Duplicate" | "Copy to…" | "Delete";
+  | "Edit"
+  | "Deactivate"
+  | "Activate"
+  | "Duplicate"
+  | "Copy to…"
+  | "Publish to the marketplace"
+  | "Delete";
 
 /** The status shown on a suspended agent's card. */
 const SUSPENDED =
@@ -34,10 +40,16 @@ export class AgentCards {
     this.menu = new MoreActionsMenu<AgentAction>(page);
   }
 
-  /** An agent's card, filtered by the agent's name. */
+  /**
+   * An agent's card, by the agent's name, which the card shows above its
+   * role. The name has no ARIA role or test ID either: its CSS module class
+   * contains "agentName".
+   */
   private card(name: string): Locator {
     return this.cards.filter({
-      has: this.page.getByText(name, { exact: true }),
+      has: this.page
+        .locator('[class*="agentName"]')
+        .filter({ hasText: new RegExp(`^${literal(name)}$`) }),
     });
   }
 
@@ -62,6 +74,23 @@ export class AgentCards {
   @step
   async expectNotListed(name: string): Promise<void> {
     await expect(this.card(name)).toHaveCount(0);
+  }
+
+  /** Expects one agent's card before another one's. */
+  @step
+  async expectListedBefore(first: string, second: string): Promise<void> {
+    await expect(this.cards).toContainText([first, second]);
+  }
+
+  /** Expects an agent's card to say that the agent is published. */
+  @step
+  async expectPublished(name: string): Promise<void> {
+    await expect(
+      this.card(name)
+        .getByRole("group", { name: "Marketplace", exact: true })
+        // The chip's icon is a font ligature whose text comes before the label.
+        .getByText(endingWith("Published")),
+    ).toBeVisible();
   }
 
   /** Whether an agent's card shows now; the caller first waits for the drawn list. */

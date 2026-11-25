@@ -58,6 +58,20 @@ export class FeaturesPage {
     await expect(this.kinds).toBeVisible();
   }
 
+  /**
+   * Expects the filter by kind open on "Capabilities" and the capabilities
+   * listed, each with its switch "Enabled for all".
+   */
+  @step
+  async expectCapabilitiesListed(): Promise<void> {
+    await expect(this.kind("Capabilities")).toBeChecked();
+    const first = this.features.rows.first();
+    await expect(first).toBeVisible();
+    await expect(
+      first.getByRole("checkbox", { name: "Enabled for all", exact: true }),
+    ).toBeVisible();
+  }
+
   /** Sets one team's own access to a capability, on the open features page. */
   @step
   async setCapabilityAccess(

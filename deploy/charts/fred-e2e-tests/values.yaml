@@ -2,13 +2,17 @@
 # testTimeout, expectTimeout, factoryFixtureTimeout and excludeTags in envConfig.
 # For a subdomain of localhost, also set localRelay.ingress.
 
+# The release's sign-in.json: the steps of the environment's sign-in pages, each
+# text in quotes. Null keeps the image's file.
+signIn: null
+
 # The control plane authorizes requests for team data. Its short name resolves
 # when both services share a namespace.
 controlPlaneUrl: http://control-plane-backend:8222
 
 image:
   repository: fred-e2e-tests
-  tag: "0.2.0"
+  tag: "0.3.0"
   pullPolicy: IfNotPresent
 
 accounts:

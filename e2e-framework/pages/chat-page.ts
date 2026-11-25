@@ -3,8 +3,7 @@ import { startingWith } from "../components/text-patterns.ts";
 import { step } from "./step.ts";
 
 /** The side panels of a conversation, by the label of the toggle that opens each. */
-export type ChatPanel =
-  "Prompt library" | "Full reasoning" | "Debug — raw messages";
+export type ChatPanel = "Prompt library" | "Full reasoning" | "Debug";
 
 /** The entries of the chat actions a test looks for, by how their label starts. */
 export type ChatAction = "Prompt library";
@@ -13,7 +12,7 @@ export type ChatAction = "Prompt library";
 const PANEL_NAMES: Readonly<Record<ChatPanel, string>> = {
   "Prompt library": "Select a prompt to insert",
   "Full reasoning": "Full reasoning",
-  "Debug — raw messages": "Debug — raw messages",
+  Debug: "Debug",
 };
 
 /** The address of a conversation with a team's agent. */
@@ -61,12 +60,12 @@ export class ChatPage {
     this.panelToggles = {
       "Prompt library": toggle("Prompt library"),
       "Full reasoning": toggle("Full reasoning"),
-      "Debug — raw messages": toggle("Debug — raw messages"),
+      Debug: toggle("Debug"),
     };
     this.panels = {
       "Prompt library": panel("Prompt library"),
       "Full reasoning": panel("Full reasoning"),
-      "Debug — raw messages": panel("Debug — raw messages"),
+      Debug: panel("Debug"),
     };
   }
 

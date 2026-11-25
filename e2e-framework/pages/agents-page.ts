@@ -1,32 +1,46 @@
 import { expect, type Locator, type Page } from "@playwright/test";
 import { AgentCards, type AgentAction } from "../components/agent-cards.ts";
-import { CopyAgentDialog } from "../components/agent-dialogs.ts";
-import { AgentForm, type AgentCapability } from "../components/agent-form.ts";
+import {
+  CopyAgentDialog,
+  DuplicateAgentDialog,
+  PublishAgentDialog,
+} from "../components/agent-dialogs.ts";
+import {
+  AgentForm,
+  type AdvancedCapability,
+  type AgentCapability,
+  type WikiMode,
+} from "../components/agent-form.ts";
 import { ConfirmDialog } from "../components/dialogs.ts";
-import { TeamSettings } from "../components/team-settings.ts";
 import { waitThenExpectButtonAbsent } from "./buttons.ts";
 import { step } from "./step.ts";
 
 /** The buttons of the agents page a test checks by name. */
 export type AgentsButton = "Create Agent";
 
-/** The orders "Sort" offers for a team's agents, by their labels. */
-export type AgentOrder =
-  "Alphabetical" | "Recently created" | "Recently updated";
+const ORDERS = [
+  "Alphabetical",
+  "Recently created",
+  "Recently updated",
+] as const;
+
+/** The orders "Sort" offers for a space's agents, by their labels. */
+export type AgentOrder = (typeof ORDERS)[number];
 
 /** The address of a space's agents. */
 const AGENTS_ADDRESS = /\/team\/[^/]+\/agents$/;
 
 /**
- * "Loading agents..." gives way to "Team agents" or the empty-list message.
- * Once team permissions load, editors can create and edit agents and see
- * suspended agents. Other members see only active agents. Reload the page to
- * verify saved changes.
+ * "Loading agents..." gives way to the list heading, "Team agents" or "Your
+ * personal agents", or to the empty-list message. Once the space's
+ * permissions load, editors can create and edit agents and see suspended
+ * agents. Other members see only active agents. Reload the page to verify
+ * saved changes.
  */
 export class AgentsPage {
   static readonly displayName = "Agents page";
   private readonly page: Page;
-  // Above the cards of a team that has agents, for every member, also when
+  // Above the cards of a space that has agents, for every member, also when
   // the page hides every one of them.
   private readonly heading: Locator;
   // Above the cards, for an editor of a team that has agents.
@@ -35,8 +49,8 @@ export class AgentsPage {
   private readonly createFirst: Locator;
   // What the page shows instead of cards when the team has no agent.
   private readonly noAgents: Locator;
-  // Above the cards; named "Sort", it shows the order chosen. Choosing an
-  // order keeps it as the user's preference: nothing here chooses one.
+  // Above the cards; named "Sort", it shows the order chosen, which is kept
+  // as the user's preference.
   private readonly sort: Locator;
   // The orders "Sort" opens.
   private readonly orders: Locator;
@@ -45,15 +59,17 @@ export class AgentsPage {
   private readonly form: AgentForm;
   private readonly confirmDialog: ConfirmDialog;
   private readonly copyDialog: CopyAgentDialog;
-  private readonly teamSettings: TeamSettings;
+  private readonly duplicateDialog: DuplicateAgentDialog;
+  private readonly publishDialog: PublishAgentDialog;
+  // "Settings" of a team's space, for a member with access to the members.
+  private readonly settings: Locator;
 
   constructor(page: Page) {
     this.page = page;
     const main = page.getByRole("main");
     this.heading = main.getByRole("heading", {
       level: 1,
-      name: "Team agents",
-      exact: true,
+      name: /^(Team agents|Your personal agents)$/,
     });
     this.createAgent = main.getByRole("button", {
       name: "Create Agent",
@@ -74,7 +90,9 @@ export class AgentsPage {
     this.form = new AgentForm(page);
     this.confirmDialog = new ConfirmDialog(page);
     this.copyDialog = new CopyAgentDialog(page);
-    this.teamSettings = new TeamSettings(page);
+    this.duplicateDialog = new DuplicateAgentDialog(page);
+    this.publishDialog = new PublishAgentDialog(page);
+    this.settings = page.getByRole("button", { name: "Settings", exact: true });
   }
 
   /**
@@ -147,6 +165,48 @@ export class AgentsPage {
     await expect(this.orders.getByRole("option")).toHaveCount(orders.length);
     await this.page.keyboard.press("Escape");
     await expect(this.orders).toBeHidden();
+  }
+
+  /** The order the agents are in, from the list of "Sort". */
+  @step
+  async readOrder(): Promise<AgentOrder> {
+    await this.sort.click();
+    await expect(this.orders).toBeVisible();
+    let chosen: AgentOrder | undefined;
+    for (const name of ORDERS)
+      if (
+        await this.orders
+          .getByRole("option", { name, exact: true, selected: true })
+          .isVisible()
+      )
+        chosen = name;
+    await this.page.keyboard.press("Escape");
+    await expect(this.orders).toBeHidden();
+    if (chosen === undefined)
+      throw new Error(
+        `"Sort" shows none of the orders ${ORDERS.join(", ")} chosen.`,
+      );
+    return chosen;
+  }
+
+  /** Sorts the agents; the order is kept as the user's preference. */
+  @step
+  async chooseOrder(order: AgentOrder): Promise<void> {
+    await this.sort.click();
+    await this.orders.getByRole("option", { name: order, exact: true }).click();
+    await this.expectOrder(order);
+  }
+
+  /** Expects "Sort" to show an order. */
+  @step
+  async expectOrder(order: AgentOrder): Promise<void> {
+    await expect(this.sort).toContainText(order);
+  }
+
+  /** Expects one agent listed before another one. */
+  @step
+  async expectListedBefore(first: string, second: string): Promise<void> {
+    await this.cards.expectListedBefore(first, second);
   }
 
   /**
@@ -271,6 +331,137 @@ export class AgentsPage {
     await this.saveEdit();
   }
 
+  /** Turns on several capabilities that are off and waits for the form to close after saving. */
+  @step
+  async turnOnAll(
+    name: string,
+    capabilities: readonly AgentCapability[],
+  ): Promise<void> {
+    await this.edit(name);
+    for (const capability of capabilities)
+      await this.form.turnOnCapability(capability);
+    await this.saveEdit();
+  }
+
+  /**
+   * Loads the page again, so the form shows what is saved, turns off a
+   * capability that is on and waits for the form to close after saving.
+   */
+  @step
+  async reloadAndTurnOff(
+    name: string,
+    capability: AgentCapability,
+  ): Promise<void> {
+    await this.reloadAndEdit(name);
+    await this.form.turnOffCapability(capability);
+    await this.saveEdit();
+  }
+
+  /** Turns on a capability that is off and closes the form unsaved. */
+  @step
+  async turnOnUnsaved(
+    name: string,
+    capability: AgentCapability,
+  ): Promise<void> {
+    await this.edit(name);
+    await this.form.turnOnCapability(capability);
+    await this.form.close();
+  }
+
+  /** Expects a capability off in an agent's form, once the page has loaded again. */
+  @step
+  async reloadAndExpectCapabilityOff(
+    name: string,
+    capability: AgentCapability,
+  ): Promise<void> {
+    await this.reloadAndEdit(name);
+    await this.form.expectCapabilityOff(capability);
+    await this.form.close();
+  }
+
+  /** Expects capabilities on and others off in an agent's form, once the page has loaded again. */
+  @step
+  async reloadAndExpectCapabilities(
+    name: string,
+    on: readonly AgentCapability[],
+    off: readonly AgentCapability[],
+  ): Promise<void> {
+    await this.reloadAndEdit(name);
+    for (const capability of on) await this.form.expectCapabilityOn(capability);
+    for (const capability of off)
+      await this.form.expectCapabilityOff(capability);
+    await this.form.close();
+  }
+
+  /** Turns on the wiki for an agent, chooses what it may do there and saves. */
+  @step
+  async turnOnWiki(name: string, mode: WikiMode): Promise<void> {
+    await this.edit(name);
+    await this.form.turnOnCapability("Access to the team wiki");
+    await this.form.chooseWikiMode(mode);
+    await this.saveEdit();
+  }
+
+  /**
+   * Loads the page again, so the form shows what is saved, chooses what the
+   * agent may do in the wiki and saves.
+   */
+  @step
+  async reloadAndChooseWikiMode(name: string, mode: WikiMode): Promise<void> {
+    await this.reloadAndEdit(name);
+    await this.form.chooseWikiMode(mode);
+    await this.saveEdit();
+  }
+
+  /** Expects what an agent may do in the wiki, once the page has loaded again. */
+  @step
+  async reloadAndExpectWikiMode(name: string, mode: WikiMode): Promise<void> {
+    await this.reloadAndEdit(name);
+    await this.form.expectCapabilityOn("Access to the team wiki");
+    await this.form.expectWikiMode(mode);
+    await this.form.close();
+  }
+
+  /** Turns on presentations for an agent, with a plan shown first, and saves. */
+  @step
+  async turnOnPresentationWithPlan(name: string): Promise<void> {
+    await this.edit(name);
+    await this.form.turnOnCapability("Generate a presentation");
+    await this.form.turnOnPlanValidation();
+    await this.saveEdit();
+  }
+
+  /** Expects presentations with a plan shown first, once the page has loaded again. */
+  @step
+  async reloadAndExpectPresentationWithPlan(name: string): Promise<void> {
+    await this.reloadAndEdit(name);
+    await this.form.expectCapabilityOn("Generate a presentation");
+    await this.form.expectPlanValidationOn();
+    await this.form.close();
+  }
+
+  /** Turns on the "Advanced" view of the open capabilities of a new agent. */
+  @step
+  async showAdvancedCapabilities(): Promise<void> {
+    await this.form.showAdvancedView();
+  }
+
+  /** Expects the "Advanced" view of the open form of a new agent to show a capability. */
+  @step
+  async expectAdvancedCapabilityListed(
+    capability: AdvancedCapability,
+  ): Promise<void> {
+    await this.form.expectAdvancedCapabilityListed(capability);
+  }
+
+  /** Opens an agent's form, expects the team's default first among its models and closes it. */
+  @step
+  async expectDefaultModelFirst(name: string): Promise<void> {
+    await this.edit(name);
+    await this.form.expectDefaultModelFirst();
+    await this.form.close();
+  }
+
   /** Expects a capability on in an agent's form, once the page has loaded again. */
   @step
   async reloadAndExpectCapabilityOn(
@@ -351,6 +542,54 @@ export class AgentsPage {
     await this.form.close();
   }
 
+  /** Expects an agent's "Team documents" restricted to no folder, once the page has loaded again. */
+  @step
+  async reloadAndExpectNotRestricted(name: string): Promise<void> {
+    await this.reloadAndEdit(name);
+    await this.form.expectNotRestricted();
+    await this.form.close();
+  }
+
+  /** Duplicates an agent under a name; the page then lists the duplicate. */
+  @step
+  async duplicate(name: string, duplicate: string): Promise<void> {
+    await this.cards.choose(name, "Duplicate");
+    await this.duplicateDialog.submit(duplicate);
+    await this.cards.expectListed(duplicate);
+  }
+
+  /** Publishes an agent to the marketplace; its card then says so. */
+  @step
+  async publish(name: string): Promise<void> {
+    await this.cards.choose(name, "Publish to the marketplace");
+    await this.publishDialog.publish(name);
+    await this.cards.expectPublished(name);
+  }
+
+  /** Copies an agent to a space; the page says that the agent was copied. */
+  @step
+  async copyTo(name: string, space: string): Promise<void> {
+    await this.cards.choose(name, "Copy to…");
+    await this.copyDialog.copyTo(name, space);
+  }
+
+  /**
+   * Opens "Copy to…" for an agent, expects one space among the destinations
+   * and another one not, once they have loaded, and closes the dialog.
+   */
+  @step
+  async expectCopyDestinations(
+    name: string,
+    origin: string,
+    shown: string,
+    notShown: string,
+  ): Promise<void> {
+    await this.cards.choose(name, "Copy to…");
+    await this.copyDialog.expectOpened(name, origin);
+    await this.copyDialog.expectDestinations(name, shown, notShown);
+    await this.copyDialog.close(name);
+  }
+
   /**
    * Opens "Copy to…" for an agent, expects the agent's own team checked and
    * "Copy" disabled, and closes the dialog: nothing is copied.
@@ -417,16 +656,20 @@ export class AgentsPage {
   }
 
   /**
-   * "Settings" becomes visible when the team record loads. The heading or
-   * empty-list message appears when the agents load. Either can arrive first.
+   * "Settings" of a team, and the create action of an editor, also in a
+   * personal space, become visible when the space's record loads. The heading
+   * or empty-list message appears when the agents load. Either can arrive
+   * first.
    */
   private async waitForRecordAndList(): Promise<void> {
-    await this.teamSettings.expectSettingsShown();
+    await expect(
+      this.settings.or(this.createAgent).or(this.createFirst).first(),
+    ).toBeVisible();
     await this.expectListDrawn();
   }
 
   /**
-   * A team with agents shows the heading even when all its agents are suspended
+   * A space with agents shows the heading even when all its agents are suspended
    * and the member cannot see their cards. A team with no agents shows the
    * empty-list message.
    */

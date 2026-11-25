@@ -2,8 +2,9 @@
 
 ## Purpose
 
-How a run is configured: Playwright's configuration, `env-config.json`, the
-accounts in `.env`, and the selection of one run on the command line.
+How a run is configured: Playwright's configuration, `env-config.json`,
+`sign-in.json`, the accounts in `.env`, and the selection of one run on the
+command line.
 
 ## Requirements
 

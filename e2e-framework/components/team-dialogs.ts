@@ -12,6 +12,8 @@ export class CreateTeamDialog {
   private readonly description: Locator;
   private readonly admins: UserPicker;
   private readonly create: Locator;
+  private readonly cancel: Locator;
+  private readonly nameInUse: Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -32,24 +34,58 @@ export class CreateTeamDialog {
       name: "Create team",
       exact: true,
     });
+    this.cancel = this.dialog.getByRole("button", {
+      name: "Cancel",
+      exact: true,
+    });
+    // The application's message names the conflict in its own words.
+    this.nameInUse = page
+      .getByRole("alert")
+      .filter({ hasText: "Failed to create team" })
+      .filter({ hasText: /already has this name|already exists/ });
   }
 
   /**
-   * Creates a team with one admin and waits for the dialog to close. The
+   * Creates a team with its admins and waits for the dialog to close. The
    * field truncates long names, so check the complete name before submitting.
    */
   @step
   async submit(
     name: string,
     description: string,
+    admins: readonly Account[],
+  ): Promise<void> {
+    await this.fill(name, description, admins);
+    await this.create.click();
+    await expect(this.dialog).toBeHidden();
+  }
+
+  /**
+   * Submits a team with a name in use; the application refuses it and says
+   * so, and the form is cancelled.
+   */
+  @step
+  async submitAndExpectNameRefused(
+    name: string,
+    description: string,
     admin: Account,
+  ): Promise<void> {
+    await this.fill(name, description, [admin]);
+    await this.create.click();
+    await expect(this.nameInUse).toBeVisible();
+    await this.cancel.click();
+    await expect(this.dialog).toBeHidden();
+  }
+
+  private async fill(
+    name: string,
+    description: string,
+    admins: readonly Account[],
   ): Promise<void> {
     await this.name.fill(name);
     await expect(this.name).toHaveValue(name);
     await this.description.fill(description);
-    await this.admins.choose(admin);
-    await this.create.click();
-    await expect(this.dialog).toBeHidden();
+    for (const admin of admins) await this.admins.choose(admin);
   }
 }
 
@@ -60,6 +96,7 @@ export class EditTeamDialog {
   private readonly dialog: Locator;
   private readonly name: Locator;
   private readonly cancel: Locator;
+  private readonly save: Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -72,6 +109,17 @@ export class EditTeamDialog {
       name: "Cancel",
       exact: true,
     });
+    this.save = this.dialog.getByRole("button", { name: "Save", exact: true });
+  }
+
+  /** Renames the team, once the form shows its name, and saves; the dialog closes. */
+  @step
+  async rename(current: string, name: string): Promise<void> {
+    await expect(this.name).toHaveValue(current);
+    await this.name.fill(name);
+    await expect(this.name).toHaveValue(name);
+    await this.save.click();
+    await expect(this.dialog).toBeHidden();
   }
 
   @step
@@ -111,6 +159,51 @@ export class TeamInvitationsDialog {
   @step
   async expectShown(team: string): Promise<void> {
     await expect(this.button(team, "Create link")).toBeVisible();
+  }
+
+  /**
+   * Creates a link without a note or an expiry and returns its address, which
+   * the dialog "Link created" shows; that dialog is then closed.
+   */
+  @step
+  async createLink(team: string): Promise<string> {
+    await this.button(team, "Create link").click();
+    const form = this.page.getByRole("dialog", {
+      name: "Create link",
+      exact: true,
+    });
+    await form
+      .getByRole("button", { name: "Create link", exact: true })
+      .click();
+    const created = this.page.getByRole("dialog", {
+      name: "Link created",
+      exact: true,
+    });
+    const address = created.getByRole("textbox", {
+      name: "Invitation link",
+      exact: true,
+    });
+    await expect(address).toHaveValue(/\/join\//);
+    const link = await address.inputValue();
+    await created.getByRole("button", { name: "Close", exact: true }).click();
+    await expect(created).toBeHidden();
+    return link;
+  }
+
+  /** Revokes the team's one link; the list then marks it "Revoked". */
+  @step
+  async revokeOnlyLink(team: string): Promise<void> {
+    const rows = this.dialog(team).locator('[class*="datatable-row"]');
+    await expect(rows).toHaveCount(1);
+    await rows.getByRole("button", { name: "Revoke", exact: true }).click();
+    // A dialog, not an alert dialog as the other confirmations are.
+    const confirm = this.page.getByRole("dialog", {
+      name: "Revoke this invitation?",
+      exact: true,
+    });
+    await confirm.getByRole("button", { name: "Revoke", exact: true }).click();
+    await expect(confirm).toBeHidden();
+    await expect(rows.getByText("Revoked", { exact: true })).toBeVisible();
   }
 
   @step

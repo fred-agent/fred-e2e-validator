@@ -1,8 +1,8 @@
 // The test the test files import, with its fixtures: the worker's account
 // set, test data and storage states; the users `admin`, `member`,
 // `secondUser`, `outsider` and `visitor`; and the factory fixtures `teams`,
-// `folders` and `agents`, which remove what they create in their own
-// teardown.
+// `folders`, `agents`, `prompts` and `preferences`, which remove what they
+// create, and restore what they change, in their own teardown.
 import { stripVTControlCharacters } from "node:util";
 import { test as base, type TestInfo } from "@playwright/test";
 import { AccountSet, type AccountName } from "../config/accounts.ts";
@@ -15,6 +15,8 @@ import { loadTestData, type TestData } from "../config/test-data.ts";
 import { PAGE_AT_FAILURE, REMOVAL_FAILED } from "../reporting/run-log.ts";
 import { Agents } from "./agents.ts";
 import { Folders } from "./folders.ts";
+import { Preferences } from "./preferences.ts";
+import { Prompts } from "./prompts.ts";
 import { StorageStates } from "./storage-states.ts";
 import { Teams } from "./teams.ts";
 import {
@@ -27,6 +29,7 @@ import {
 export type { Space } from "../config/test-data.ts";
 export type { Agent } from "./agents.ts";
 export type { Folder } from "./folders.ts";
+export type { Prompt } from "./prompts.ts";
 export type { TemporaryTeam } from "./teams.ts";
 export { PROCESSING_TIMEOUT } from "../pages/resources-page.ts";
 export { REMOVAL_FAILED };
@@ -37,15 +40,18 @@ export { REMOVAL_FAILED };
  */
 const FACTORY_FIXTURE_TIMEOUT = readEnvConfig().factoryFixtureTimeout;
 
-/** One removal of what a factory fixture created, run in its teardown. */
+/**
+ * One removal of what a factory fixture created, or restoration of what it
+ * changed, run in its teardown.
+ */
 export type Removal = Readonly<{
   /** The step's title, such as `Delete the folder "e2e upload …" of "Personal space"`. */
   title: string;
-  /** The account that created the thing, whose storage state opens the removal's context. */
+  /** The account that created or changed the thing, whose storage state opens the removal's context. */
   account: AccountName;
   /**
-   * Removes an object even if setup stopped before the test ran. A confirmed
-   * object must still exist.
+   * Removes or restores even if setup stopped before the test ran. A
+   * confirmed object must still exist.
    */
   remove: (user: User) => Promise<void>;
 }>;
@@ -74,6 +80,8 @@ type TestFixtures = {
   teams: Teams;
   folders: Folders;
   agents: Agents;
+  prompts: Prompts;
+  preferences: Preferences;
 };
 
 function twoDigits(value: number): string {
@@ -292,6 +300,33 @@ export const test = base.extend<TestFixtures, WorkerFixtures>({
       const setupMs = performance.now() - setupStart;
       await use(agents);
       await removeEach(() => agents.removals(), testUsers, testInfo, setupMs);
+    },
+    { timeout: FACTORY_FIXTURE_TIMEOUT },
+  ],
+  // Depends on `teams`, so Playwright tears a prompt down before its team.
+  prompts: [
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars -- the dependency orders the teardowns
+    async ({ testUsers, uniqueName: name, teams }, use, testInfo) => {
+      const setupStart = performance.now();
+      const prompts = new Prompts({ uniqueName: name });
+      const setupMs = performance.now() - setupStart;
+      await use(prompts);
+      await removeEach(() => prompts.removals(), testUsers, testInfo, setupMs);
+    },
+    { timeout: FACTORY_FIXTURE_TIMEOUT },
+  ],
+  preferences: [
+    async ({ testUsers }, use, testInfo) => {
+      const setupStart = performance.now();
+      const preferences = new Preferences();
+      const setupMs = performance.now() - setupStart;
+      await use(preferences);
+      await removeEach(
+        () => preferences.removals(),
+        testUsers,
+        testInfo,
+        setupMs,
+      );
     },
     { timeout: FACTORY_FIXTURE_TIMEOUT },
   ],

@@ -5,6 +5,7 @@ import {
   type AccountName,
   type AccountSet,
 } from "../config/accounts.ts";
+import type { TeamId } from "../fred-api/fred-api.ts";
 import type { FeatureAccess, TeamCapability } from "../pages/features-page.ts";
 import type { TeamRole } from "../pages/team-members-page.ts";
 import type { Removal } from "./test.ts";
@@ -21,11 +22,13 @@ export type CapabilityAccess = Readonly<{
 
 /**
  * How a team is set up. The platform administrator administers every
- * temporary team; `members` are added to it, `roles` given to the platform
- * administrator or to members, `agentTemplate` enabled for the team, and
- * each of `capabilities` set for the team in Admin › Features.
+ * temporary team; `admins` administer it too from its creation, `members`
+ * are added to it, `roles` given to the platform administrator or to
+ * members, `agentTemplate` enabled for the team, and each of `capabilities`
+ * set for the team in Admin › Features.
  */
 export type TeamOptions = Readonly<{
+  admins?: readonly AccountName[];
   members?: readonly AccountName[];
   roles?: Readonly<Partial<Record<AccountName, readonly TeamRole[]>>>;
   agentTemplate?: string;
@@ -36,11 +39,11 @@ export type TeamOptions = Readonly<{
 const DESCRIPTION =
   "A temporary team that an end-to-end test creates and removes.";
 
-/**
- * The fixture records the team before creation and tracks whether creation was
- * confirmed.
- */
-type RecordedTeam = { readonly team: TemporaryTeam; inFred: boolean };
+/** Teardown keeps the ID from creation even when the team's name changes. */
+type RecordedTeam = {
+  team: TemporaryTeam;
+  readonly id: TeamId;
+};
 
 /** The accounts a team's options give roles to, each with its roles. */
 function roleEntries(
@@ -54,6 +57,15 @@ function roleEntries(
 /** Checks member and role options before creating the team. */
 function checkOptions(word: string, options: TeamOptions): void {
   const members = options.members ?? [];
+  const admins = options.admins ?? [];
+  if (admins.includes(PLATFORM_ADMIN))
+    throw new Error(
+      `teams.create("${word}"): ${PLATFORM_ADMIN} administers every temporary team, so it is not one of its other admins.`,
+    );
+  if (admins.some((account) => members.includes(account)))
+    throw new Error(
+      `teams.create("${word}"): an admin of the team is not one of the members it adds.`,
+    );
   if (members.includes(PLATFORM_ADMIN))
     throw new Error(
       `teams.create("${word}"): ${PLATFORM_ADMIN} administers every temporary team, so it is not one of its members.`,
@@ -80,13 +92,7 @@ export class Teams {
     this.options = options;
   }
 
-  /**
-   * Records the team, creates it in the console as the platform
-   * administrator, its only administrator, adds the members, grants the
-   * roles, then enables the agent template and sets each capability for the
-   * team in Admin › Features: in that order, in the platform administrator's
-   * own user, which it opens here.
-   */
+  /** Creates a team with its administrators, then configures members, roles and access. */
   async create(
     word: string,
     options: TeamOptions = {},
@@ -94,13 +100,18 @@ export class Teams {
     checkOptions(word, options);
     const { users, accounts, uniqueName } = this.options;
     const team: TemporaryTeam = Object.freeze({ name: uniqueName(word) });
-    const recorded: RecordedTeam = { team, inFred: false };
-    this.recorded.push(recorded);
     const admin = await users.user(PLATFORM_ADMIN);
     const { adminTeams, teamMembers, features } = admin.pages;
     await adminTeams.open();
-    await adminTeams.createTeam(team.name, DESCRIPTION, admin.account);
-    recorded.inFred = true;
+    const admins = [
+      admin.account,
+      ...(options.admins ?? []).map((name) => accounts.get(name)),
+    ];
+    await admin.api.recordTeamCreation(
+      team.name,
+      () => adminTeams.createTeam(team.name, DESCRIPTION, admins),
+      (id) => this.recorded.push({ team, id }),
+    );
     const members = options.members ?? [];
     const roles = roleEntries(options.roles);
     if (members.length > 0 || roles.length > 0)
@@ -120,18 +131,29 @@ export class Teams {
     return team;
   }
 
-  /**
-   * Teardown deletes teams newest first as the platform administrator. A
-   * missing team is an error only after creation was confirmed.
-   */
+  /** Renames a team created by this fixture and returns it under its new name. */
+  async rename(team: TemporaryTeam, word: string): Promise<TemporaryTeam> {
+    const recorded = this.recorded.find((entry) => entry.team === team);
+    if (recorded === undefined)
+      throw new Error(
+        `teams.rename: the team "${team.name}" is not one of the test's.`,
+      );
+    const renamed: TemporaryTeam = Object.freeze({
+      name: this.options.uniqueName(word),
+    });
+    const admin = await this.options.users.user(PLATFORM_ADMIN);
+    await admin.flows.openConsoleSection("Teams");
+    await admin.pages.adminTeams.rename(team.name, renamed.name);
+    recorded.team = renamed;
+    return renamed;
+  }
+
+  /** Teardown deletes confirmed teams newest first by their original IDs. */
   removals(): Removal[] {
     return this.recorded.toReversed().map((recorded) => ({
       title: `Delete the team "${recorded.team.name}"`,
       account: PLATFORM_ADMIN,
-      remove: async (user) =>
-        user.api.deleteTeam(recorded.team.name, {
-          expected: recorded.inFred,
-        }),
+      remove: (user) => user.api.deleteTeam(recorded.id, recorded.team.name),
     }));
   }
 }

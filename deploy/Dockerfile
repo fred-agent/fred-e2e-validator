@@ -19,7 +19,7 @@ FROM ${PLAYWRIGHT_IMAGE}
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci --omit=dev --ignore-scripts
-COPY playwright.config.ts tsconfig.json env-config.json ./
+COPY playwright.config.ts tsconfig.json env-config.json sign-in.json ./
 COPY e2e-framework ./e2e-framework
 COPY test-data ./test-data
 COPY tests ./tests

@@ -2,7 +2,7 @@
 // their own account. Source: Help Center, "First steps".
 import { test } from "../../e2e-framework/fixtures/test.ts";
 
-test.describe("Switching users", () => {
+test.describe("Switching users", { tag: "@extended" }, () => {
   test.describe("After one user signs out, the next user who signs in sees their own account", () => {
     test("A second user signs in after the first signed out", async ({
       visitor,

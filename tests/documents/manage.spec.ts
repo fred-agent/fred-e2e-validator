@@ -196,26 +196,49 @@ test.describe("Managing documents", () => {
   });
 
   test.describe("A member leaves a document out of search and includes it again", () => {
-    test.fixme(
+    test(
       'A document excluded from search is marked "Excluded from search"',
       { tag: "@model" },
-      () => {
-        // member creates a folder in the test space
-        // member uploads "e2e-sample.txt" into the folder with processing and sees it with the status "Done"
-        // member chooses "Exclude from search" for "e2e-sample.txt"
-        // member sees "e2e-sample.txt" marked "Excluded from search" in the folder
+      async ({ member, folders, testData }) => {
+        test.setTimeout(PROCESSING_TIMEOUT + 120_000);
+        const folder =
+          await test.step("member creates a folder in the test space", () =>
+            folders.create(member, testData.space, "manage"));
+        await test.step('member uploads "e2e-sample.txt" into the folder with processing and sees it with the status "Done"', async () => {
+          await member.flows.openFolder(folder);
+          await member.pages.resources.uploadAndProcess("e2e-sample.txt");
+        });
+        await test.step('member chooses "Exclude from search" for "e2e-sample.txt"', () =>
+          member.pages.resources.excludeFromSearch("e2e-sample.txt"));
+        await test.step('member opens the folder again and sees "e2e-sample.txt" marked "Excluded from search"', async () => {
+          await member.flows.openFolder(folder);
+          await member.pages.resources.expectExcludedFromSearch(
+            "e2e-sample.txt",
+          );
+        });
       },
     );
 
-    test.fixme(
+    test(
       "A document included in search again loses the mark",
       { tag: "@model" },
-      () => {
-        // member creates a folder in the test space
-        // member uploads "e2e-sample.txt" into the folder with processing and sees it with the status "Done"
-        // member chooses "Exclude from search" for "e2e-sample.txt"
-        // member chooses "Include in search" for "e2e-sample.txt"
-        // member sees "e2e-sample.txt" not marked "Excluded from search" in the folder
+      async ({ member, folders, testData }) => {
+        test.setTimeout(PROCESSING_TIMEOUT + 120_000);
+        const folder =
+          await test.step("member creates a folder in the test space", () =>
+            folders.create(member, testData.space, "manage"));
+        await test.step('member uploads "e2e-sample.txt" into the folder with processing and sees it with the status "Done"', async () => {
+          await member.flows.openFolder(folder);
+          await member.pages.resources.uploadAndProcess("e2e-sample.txt");
+        });
+        await test.step('member chooses "Exclude from search" for "e2e-sample.txt"', () =>
+          member.pages.resources.excludeFromSearch("e2e-sample.txt"));
+        await test.step('member chooses "Include in search" for "e2e-sample.txt"', () =>
+          member.pages.resources.includeInSearch("e2e-sample.txt"));
+        await test.step('member opens the folder again and sees "e2e-sample.txt" not marked "Excluded from search"', async () => {
+          await member.flows.openFolder(folder);
+          await member.pages.resources.expectIncludedInSearch("e2e-sample.txt");
+        });
       },
     );
   });

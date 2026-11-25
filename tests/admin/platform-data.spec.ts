@@ -21,7 +21,7 @@ test.describe("Platform data", () => {
 
   test.describe("A platform admin moves platform data between environments", () => {
     test.fixme("An export can be imported", () => {
-      // Planned: exports, imports or resets platform data.
+      // Planned: an import of platform data cannot be put back.
       // admin opens the console section "Platform data" and exports the platform's data
       // admin imports the exported file as a migration with "Launch migration"
       // admin sees the migration completed
@@ -30,7 +30,7 @@ test.describe("Platform data", () => {
 
   test.describe("A platform admin resets the platform's data", () => {
     test.fixme("A reset platform holds no data of the reset kind", () => {
-      // Planned: exports, imports or resets platform data.
+      // Planned: a reset deletes data the tests did not create.
       // admin opens the console section "Platform data" and resets the platform's agents
       // admin sees no agent in the platform's data
     });

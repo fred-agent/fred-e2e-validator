@@ -35,54 +35,138 @@ test.describe("Personal prompts", () => {
   });
 
   test.describe("A member creates, edits and deletes their prompts", () => {
-    test.fixme("A created prompt is listed", () => {
-      // member opens the prompts of the test space and creates a prompt
-      // member opens the prompts of the test space again and sees the prompt
+    test("A created prompt is listed", async ({
+      member,
+      prompts,
+      testData,
+    }) => {
+      const prompt =
+        await test.step("member creates a prompt in the test space", () =>
+          prompts.create(member, testData.space, "prompt"));
+      await test.step("member opens the prompts of the test space again and sees the prompt", async () => {
+        await member.flows.openPrompts(testData.space);
+        await member.pages.prompts.expectListed(prompt.name);
+      });
     });
 
-    test.fixme("An edited prompt shows its new text", () => {
-      // member creates a prompt in the test space
-      // member changes the text of the prompt to "List the key points."
-      // member opens the prompt and sees the text "List the key points."
+    test("An edited prompt shows its new text", async ({
+      member,
+      prompts,
+      testData,
+    }) => {
+      const prompt =
+        await test.step("member creates a prompt in the test space", () =>
+          prompts.create(member, testData.space, "prompt"));
+      await test.step("member changes the text of the prompt", () =>
+        member.pages.prompts.replaceText(prompt, "List the key points."));
+      await test.step("member opens the prompts of the test space again, opens the prompt and sees its new text", async () => {
+        await member.flows.openPrompts(testData.space);
+        await member.pages.prompts.expectText(
+          prompt.name,
+          "List the key points.",
+        );
+      });
     });
 
-    test.fixme("A deleted prompt is no longer listed", () => {
-      // member creates a prompt in the test space
-      // member deletes the prompt
-      // member opens the prompts of the test space again and does not see the prompt
+    test("A deleted prompt is no longer listed", async ({
+      member,
+      prompts,
+      testData,
+    }) => {
+      const prompt =
+        await test.step("member creates a prompt in the test space", () =>
+          prompts.create(member, testData.space, "prompt"));
+      await test.step("member opens the prompts of the test space and deletes the prompt", () =>
+        prompts.delete(member, prompt));
+      await test.step("member opens the prompts of the test space again and does not see the prompt", async () => {
+        await member.flows.openPrompts(testData.space);
+        await member.pages.prompts.expectNotListed(prompt.name);
+      });
     });
   });
 
   test.describe("A member finds prompts by search and by favorites", () => {
-    test.fixme("A search lists only the matching prompt", () => {
-      // member creates two prompts in the test space
-      // member searches the prompts of the test space for the first prompt's name
-      // member sees only the first prompt among the prompts
+    test("A search lists only the matching prompt", async ({
+      member,
+      prompts,
+      testData,
+    }) => {
+      const found =
+        await test.step("member creates a prompt in the test space", () =>
+          prompts.create(member, testData.space, "prompt found"));
+      const other =
+        await test.step("member creates a second prompt in the test space", () =>
+          prompts.create(member, testData.space, "prompt other"));
+      await test.step("member searches the prompts for the first prompt's name", () =>
+        member.pages.prompts.search(found.name));
+      await test.step("member sees the first prompt and not the second", () =>
+        member.pages.prompts.expectListedWithout(found.name, other.name));
     });
 
-    test.fixme("The favorites filter lists only the prompts marked as favorite", () => {
-      // member creates two prompts in the test space
-      // member marks the first prompt as a favorite
-      // member shows only the favorite prompts of the test space
-      // member sees only the first prompt among the prompts
+    test("The favorites filter lists only the prompts marked as favorite", async ({
+      member,
+      prompts,
+      testData,
+    }) => {
+      const favorite =
+        await test.step("member creates a prompt in the test space", () =>
+          prompts.create(member, testData.space, "prompt favorite"));
+      const other =
+        await test.step("member creates a second prompt in the test space", () =>
+          prompts.create(member, testData.space, "prompt other"));
+      await test.step("member marks the first prompt as a favorite and reloads the prompts", () =>
+        member.pages.prompts.addToFavoritesAndReload(favorite.name));
+      await test.step("member shows only the favorite prompts", () =>
+        member.pages.prompts.showOnlyFavorites());
+      await test.step("member sees the first prompt and not the second", () =>
+        member.pages.prompts.expectListedWithout(favorite.name, other.name));
     });
   });
 
-  test.describe("Favorites belong to each user", () => {
-    test.fixme("A second user does not see the first user's favorite", () => {
-      // admin creates a team with secondUser as a member, in which admin also holds the Editor role
-      // admin creates a prompt in the team
-      // admin marks the prompt as a favorite
-      // secondUser opens the prompts of the team
-      // secondUser sees the prompt not marked as a favorite
-    });
-  });
+  test.describe(
+    "Favorites belong to each user",
+    { tag: ["@team", "@extended"] },
+    () => {
+      test("A second user does not see the first user's favorite", async ({
+        admin,
+        secondUser,
+        teams,
+        prompts,
+      }) => {
+        const team =
+          await test.step("admin creates a team with secondUser as a member, in which admin also holds the Editor role", () =>
+            teams.create("favorites", {
+              members: ["secondUser"],
+              roles: { admin: ["Editor"] },
+            }));
+        const prompt =
+          await test.step("admin creates a prompt in the team", () =>
+            prompts.create(admin, team, "prompt"));
+        await test.step("admin marks the prompt as a favorite and reloads the prompts", () =>
+          admin.pages.prompts.addToFavoritesAndReload(prompt.name));
+        await test.step("secondUser opens the prompts of the team", () =>
+          secondUser.flows.openPrompts(team));
+        await test.step("secondUser sees the prompt not marked as a favorite", () =>
+          secondUser.pages.prompts.expectNotFavorite(prompt.name));
+      });
+    },
+  );
 
   test.describe("A prompt's command follows the command rules", () => {
-    test.fixme("A command that breaks the rules is refused", () => {
-      // member creates a prompt with the command "e2e-summary" in the test space
-      // member opens "Create prompt" and gives a second prompt the command "e2e-summary"
-      // member is told that the command is already used by another prompt
+    test("A command that another prompt carries is refused", async ({
+      member,
+      prompts,
+      testData,
+    }) => {
+      const prompt =
+        await test.step("member creates a prompt with a command in the test space", () =>
+          prompts.create(member, testData.space, "prompt command", {
+            command: true,
+          }));
+      await test.step("member gives a second prompt the same command, is told that another prompt uses it and closes the form unsaved", () =>
+        member.pages.prompts.expectCommandRefused(
+          prompts.withCommandOf(member, prompt, "prompt second"),
+        ));
     });
   });
 });

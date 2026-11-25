@@ -119,8 +119,10 @@ as the agent template, is text. An action SHALL return the result a later
 check needs. A page object SHALL wait for the page with
 web-first assertions and auto-waiting, SHALL wait until the part of the
 page it reads has loaded before it checks that something is absent, and
-SHALL decide what to check from the page alone; only Fred's API adapter
-reads Fred's bootstrap response, to delete a temporary team.
+SHALL decide what to check from the page alone. Only the API adapter SHALL
+read response bodies. It SHALL record a temporary team's ID from the
+successful creation response. At teardown it SHALL verify that the signed-in
+user's bootstrap response lists that ID before deleting the team.
 
 #### Scenario: A wrong label
 

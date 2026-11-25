@@ -12,6 +12,10 @@ import {
   type Browser,
 } from "./e2e-framework/config/settings.ts";
 import type { RunLogOptions } from "./e2e-framework/reporting/run-log-reporter.ts";
+import {
+  RUN_LOG_REPORTER,
+  STEP_REPORTER,
+} from "./e2e-framework/reporting/reporters.ts";
 
 loadDotEnv();
 const envConfig = readEnvConfig();
@@ -39,7 +43,7 @@ const html: ReporterDescription = [
 const reporter: ReporterDescription[] = progressFile
   ? [
       [
-        "./e2e-framework/reporting/run-log-reporter.ts",
+        RUN_LOG_REPORTER,
         {
           progressFile,
           logFile: process.env.RUN_LOG_FILE,
@@ -58,7 +62,7 @@ export default defineConfig({
   timeout: envConfig.testTimeout,
   expect: { timeout: envConfig.expectTimeout },
   globalSetup: "./e2e-framework/fixtures/global-setup.ts",
-  reporter: [["./e2e-framework/reporting/step-report.ts"], ...reporter],
+  reporter: [[STEP_REPORTER], ...reporter],
   quiet: true,
   preserveOutput: "never",
   captureGitInfo: { commit: false, diff: false },

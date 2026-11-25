@@ -3,7 +3,7 @@
 // permissions".
 import { test, type TemporaryTeam } from "../../e2e-framework/fixtures/test.ts";
 
-test.describe("Team space pages", () => {
+test.describe("Team space pages", { tag: "@team" }, () => {
   let team: TemporaryTeam;
 
   test.beforeEach(async ({ teams }) => {

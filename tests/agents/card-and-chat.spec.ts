@@ -11,7 +11,7 @@ import {
   type TemporaryTeam,
 } from "../../e2e-framework/fixtures/test.ts";
 
-test.describe("Agent card and conversation", () => {
+test.describe("Agent card and conversation", { tag: "@team" }, () => {
   let team: TemporaryTeam;
   let agent: Agent;
 
@@ -70,10 +70,18 @@ test.describe("Agent card and conversation", () => {
         ]));
     });
 
-    test.fixme("Agents are listed in the chosen order", () => {
-      // admin creates a second agent in the team
-      // admin opens the agents of the team and sorts them by "Recently created"
-      // admin sees the second agent before the first
+    test("Agents are listed in the chosen order", async ({ admin, agents }) => {
+      const second =
+        await test.step("admin creates a second agent in the team", () =>
+          agents.create(admin, team, "agent second"));
+      await test.step('admin opens the agents of the team and sorts them by "Alphabetical"', () =>
+        agents.sort(admin, team, "Alphabetical"));
+      await test.step("admin sees the first agent before the second", () =>
+        admin.pages.agents.expectListedBefore(agent.name, second.name));
+      await test.step('admin sorts the agents by "Recently created"', () =>
+        agents.sort(admin, team, "Recently created"));
+      await test.step("admin sees the second agent before the first", () =>
+        admin.pages.agents.expectListedBefore(second.name, agent.name));
     });
   });
 
@@ -90,7 +98,7 @@ test.describe("Agent card and conversation", () => {
     for (const panel of [
       "Prompt library",
       "Full reasoning",
-      "Debug — raw messages",
+      "Debug",
     ] as const) {
       test(`A new conversation shows the panel "${panel}"`, async ({
         admin,

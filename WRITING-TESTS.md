@@ -106,15 +106,17 @@ keep their locators private.
 
 ## The fixtures a test receives
 
-| Fixture                                     | Gives                                                                                             |
-| ------------------------------------------- | ------------------------------------------------------------------------------------------------- |
-| `admin`, `member`, `secondUser`, `outsider` | The account of that name, signed in; README's [Set up](README.md#set-up) describes each           |
-| `visitor`                                   | A user whose browser context starts with no state, with `signIn(name)` and `signOut()`            |
-| `teams`                                     | `teams.create(word, options)`, which returns a `TemporaryTeam`                                    |
-| `folders`                                   | `folders.create(user, space, word)`, which returns a `Folder`, and `folders.delete(user, folder)` |
-| `agents`                                    | `agents.create(user, team, word)`, which returns an `Agent`                                       |
-| `testData`                                  | The test data: `space`, `agentTemplate`, `agentUseCase`                                           |
-| `accounts`                                  | The worker's account set: `accounts.get(name)` gives an account without opening a browser context |
+| Fixture                                     | Gives                                                                                                              |
+| ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `admin`, `member`, `secondUser`, `outsider` | The account of that name, signed in; README's [Set up](README.md#set-up) describes each                            |
+| `visitor`                                   | A user whose browser context starts with no state, with `signIn(name)` and `signOut()`                             |
+| `teams`                                     | `teams.create(word, options)`, which returns a `TemporaryTeam`, and `teams.rename(team, word)`                     |
+| `folders`                                   | `folders.create(user, space, word)`, which returns a `Folder`, and `folders.delete(user, folder)`                  |
+| `agents`                                    | `agents.create(user, space, word)`, which returns an `Agent`; `duplicate`, `copy`, `sort`, `importFromMarketplace` |
+| `prompts`                                   | `prompts.create(user, space, word, options)`, which returns a `Prompt`; `delete`, `withCommandOf`                  |
+| `preferences`                               | `chooseAnotherTheme`, `chooseAnotherMode`, `chooseLanguage` and `importPicture` of a user                          |
+| `testData`                                  | The test data: `space`, `agentTemplate`, `agentUseCase`                                                            |
+| `accounts`                                  | The worker's account set: `accounts.get(name)` gives an account without opening a browser context                  |
 
 - A user is a browser context of its own with `account`, `pages`, the typed
   page objects such as `member.pages.resources`, and `flows`, the routes
@@ -128,9 +130,9 @@ keep their locators private.
   so setup opens no browser context for an account the test does not drive.
 - A factory takes its arguments in one order: the acting user when there is
   one, the space or team it creates in, the word, and the options. A team's
-  options name its members, the roles of its members and of `admin`, who
-  administers it, the agent template, and the capabilities to enable or
-  disable for it in Admin › Features:
+  options name its other admins, its members, the roles of its members and of
+  `admin`, who administers it, the agent template, and the capabilities to
+  enable or disable for it in Admin › Features:
 
   ```ts
   teams.create("documents", {
@@ -140,9 +142,10 @@ keep their locators private.
   });
   ```
 
-- A `Space` is a `TemporaryTeam` or `testData.space`; a `Folder` holds its
-  space and its name. The types `Space`, `Folder`, `TemporaryTeam` and
-  `Agent` come from `e2e-framework/fixtures/test.ts`.
+- A `Space` is a `TemporaryTeam` or `testData.space`; a `Folder`, an `Agent`
+  and a `Prompt` hold their space and their name. The types `Space`,
+  `Folder`, `TemporaryTeam`, `Agent` and `Prompt` come from
+  `e2e-framework/fixtures/test.ts`.
 
 ## Steps and their titles
 
@@ -166,14 +169,14 @@ keep their locators private.
 - Setup every test of a group needs is `test.beforeEach`, its body a titled
   step; what it creates is kept in a `let` of the group.
 - A step that creates something returns it, and later steps take it as an
-  argument: a team, a folder, an agent, a download.
+  argument: a team, a folder, an agent, a prompt, a download.
 - A test passes a factory fixture the word for the object's name in Fred,
   such as `"upload"` ([names](ARCHITECTURE.md#names)); the factory removes
   the object after the test.
 - Every test is independent: it creates what it needs and relies on no
-  other test and no run order. A test that changes an account's preference
-  restores it in a fixture's teardown; the fixture depends on the factory
-  fixtures, which close the test's users before their first removal.
+  other test and no run order. A test changes an account's setting through
+  `preferences`, or the order of a space's agents through `agents.sort`,
+  whose teardown restores the value read before the change.
 
 ## Parameterized tests
 
@@ -186,17 +189,26 @@ file is type-checked.
 
 ## Tags
 
-| Tag      | Marks                                                                               |
-| -------- | ----------------------------------------------------------------------------------- |
-| `@smoke` | The sign-in test, a quick check of an environment                                   |
-| `@model` | A test that needs Fred's embedding or vision models, such as processing a text file |
-| `@ppt`   | A test that needs Fred's PowerPoint capability "Generate a presentation"            |
+| Tag         | Marks                                                                               |
+| ----------- | ----------------------------------------------------------------------------------- |
+| `@smoke`    | The sign-in test, a quick check of an environment                                   |
+| `@model`    | A test that needs Fred's embedding or vision models, such as processing a text file |
+| `@ppt`      | A test that needs Fred's PowerPoint capability "Generate a presentation"            |
+| `@team`     | A test that creates a team, which the platform administrator does                   |
+| `@extended` | A test that needs several accounts or signs in through the form                     |
 
 A tag goes on the group or the test that needs it, as `{ tag: "@model" }`
 ([tag tests](https://playwright.dev/docs/test-annotations#tag-tests)). The
 list is a convention of this guide. `--grep @smoke` runs the tests
 of a tag, and `excludeTags` of `env-config.json` leaves out the tests of the
 tags an environment cannot run.
+
+- A test without `@extended` uses only `admin` and `member`, which may be one
+  account.
+- A test without `@team` and `@extended` creates only in the member's
+  personal space, and changes no setting but the member's own.
+- With `excludeTags` of `["@extended"]` a run holds the tests of one user;
+  with `["@extended", "@team"]`, those that create no team.
 
 ## Timeouts and budgets
 
@@ -230,14 +242,19 @@ the upload test file above.
 
 - A test may open a conversation of Fred; it never types into it or sends
   anything.
-- A test changes no setting for every team or every user, and publishes
-  nothing to the marketplace.
-- In the technical console, a test creates its own team through `teams` and
-  sets what Admin › Features enables for that team; beyond that, it saves,
-  exports, imports, repairs, resets and runs nothing, and cancels a form it
-  opens.
-- A rule that only such a test could check is planned by decision, with
-  its reason.
+- A test deletes, overwrites or removes no user, team or data it did not
+  create itself: no text or file someone else wrote, such as a platform
+  prompt, an access rule, a model's display name or a template, no
+  announcement, and no agent another team published.
+- A test may change a choice for every team or every user, such as a switch,
+  an option, a number or a selection, when it reads the choice first and a
+  fixture's teardown puts it back. It publishes to the marketplace only an
+  agent of a team it created.
+- A test does nothing that cannot be put back: it resets, imports or repairs
+  no platform data, dismisses no task or model, announces or withdraws no
+  update, and imports no users into the whitelist.
+- A rule that only a test these rules forbid could check is planned by
+  decision, with its reason.
 - A test that fails because of Fred is kept as written and fails.
 
 ## A page object
@@ -261,9 +278,9 @@ property of `pages` ([page object models](https://playwright.dev/docs/pom)).
 - A label the method takes, as Fred shows it, is a union type beside the
   page object, with a `const` list only where code iterates over it, so a
   wrong label fails the type check. A name of the test data, such as the
-  agent template, is text. Where the label alone does not name the locator,
-  a record keyed by it, or an exhaustive `switch`, maps it to a locator, a
-  text or a page object.
+  agent template, and a text of `sign-in.json` are text. Where the label
+  alone does not name the locator, a record keyed by it, or an exhaustive
+  `switch`, maps it to a locator, a text or a page object.
 - A button a test checks by name, such as "New folder" or "Refresh this
   view", is an entry of a private record from the page's button union, such
   as `ResourcesButton`, to its locator fields. `expectButtonVisible(name)`
@@ -285,14 +302,21 @@ property of `pages` ([page object models](https://playwright.dev/docs/pom)).
   run in a page and a fixed wait. Its checks read the page alone.
 
 A component is the same shape in `e2e-framework/components/`: a part of
-Fred's pages, such as a dialog, a menu or a table, which one or several
-classes hold in a private field. One that a test or a flow calls directly,
-such as `accountMenu`, has an entry in the registry object. Fred's data
-tables use the `DataTable` component, which gives its `rows` and
-`row(text)` locators to the class that holds it.
+Fred's pages, such as a dialog, a menu or a table, or the actions of the
+sign-in pages, which one or several classes hold in a private field. One that
+a test or a flow calls directly, such as `accountMenu`, has an entry in the
+registry object. Fred's data tables use the `DataTable` component, which
+gives its `rows` and `row(text)` locators to the class that holds it.
 
 A file a test uploads lives in `test-data/uploads/` and is named in the
 union type of `e2e-framework/config/uploads.ts`.
+
+## The sign-in pages
+
+`sign-in.json` holds the steps of the environment's sign-in pages, as README's
+[sign-in.json](README.md#sign-injson) describes: when the pages change, only
+this file changes. `SignInPage` carries the steps out with the component
+`SignInActions`, which holds their locators.
 
 ## A flow
 
@@ -305,13 +329,15 @@ single page's action is a call to its page object.
 ## A factory fixture
 
 Each kind of object the tests create has a test-scoped factory fixture in
-`e2e-framework/fixtures/`, built as `teams`, `folders` and `agents` are:
+`e2e-framework/fixtures/`, built as `teams`, `folders`, `agents` and `prompts`
+are, and `preferences` restores what a test changes in the same way:
 
 - its class, such as `Folders` in `fixtures/folders.ts`, names the object
   with `uniqueName(word)`, creates it through flows and page objects, and
   returns it;
 - the class lists its removals, newest first, each with its title, the
-  account that created the object and the removal itself;
+  account that created the object and the removal itself, recorded before
+  Fred is touched;
 - its fixture in `fixtures/test.ts` hands an object of the class to the test
   with `use` and then calls `removeEach` with the function that lists the
   removals;

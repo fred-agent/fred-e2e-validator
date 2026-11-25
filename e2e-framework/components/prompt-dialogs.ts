@@ -1,6 +1,13 @@
 import { expect, type Locator, type Page } from "@playwright/test";
 import { step } from "../pages/step.ts";
 
+/** What a new prompt holds; its command is optional. */
+export type PromptContent = Readonly<{
+  name: string;
+  text: string;
+  command?: string;
+}>;
+
 /**
  * The "New prompt" and "Edit prompt" dialogs lack accessible names. Their
  * prompt text field distinguishes them from other dialogs. "Create" requires
@@ -18,7 +25,9 @@ export class PromptForm {
   // A text editor, not an input: its text is its content.
   private readonly text: Locator;
   private readonly create: Locator;
+  private readonly save: Locator;
   private readonly cancel: Locator;
+  private readonly commandInUse: Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -47,10 +56,51 @@ export class PromptForm {
       name: "Create",
       exact: true,
     });
+    this.save = this.dialog.getByRole("button", { name: "Save", exact: true });
     this.cancel = this.dialog.getByRole("button", {
       name: "Cancel",
       exact: true,
     });
+    this.commandInUse = this.dialog.getByText(
+      "This command is already used by another prompt",
+      { exact: true },
+    );
+  }
+
+  /** Fills the form of a new prompt and clicks "Create"; the caller checks the result. */
+  @step
+  async submitNew(prompt: PromptContent): Promise<void> {
+    await expect(this.title).toBeVisible();
+    await this.name.fill(prompt.name);
+    if (prompt.command !== undefined) await this.command.fill(prompt.command);
+    await this.text.fill(prompt.text);
+    await this.create.click();
+  }
+
+  /** The form closes after the prompt has been saved. */
+  @step
+  async expectSaved(): Promise<void> {
+    await expect(this.dialog).toBeHidden();
+  }
+
+  /** A command in use keeps the form open after "Create" and is named on its field. */
+  @step
+  async expectCommandInUse(): Promise<void> {
+    await expect(this.commandInUse).toBeVisible();
+    await expect(this.command).toHaveAttribute("aria-invalid", "true");
+  }
+
+  /**
+   * Replaces the text of the prompt being edited, once the form shows the
+   * prompt's own name and text, and saves it.
+   */
+  @step
+  async replaceText(prompt: PromptContent, text: string): Promise<void> {
+    await expect(this.name).toHaveValue(prompt.name);
+    await expect(this.text).toHaveText(prompt.text);
+    await this.text.fill(text);
+    await this.save.click();
+    await this.expectSaved();
   }
 
   /** Expects the new prompt form with every field empty and "Create" disabled. */
@@ -67,6 +117,37 @@ export class PromptForm {
   @step
   async close(): Promise<void> {
     await this.cancel.click();
+    await expect(this.dialog).toBeHidden();
+  }
+}
+
+/**
+ * The read-only view of a prompt, which its card opens. It has no accessible
+ * name; its "Copy prompt" button, which only this dialog has, identifies it.
+ */
+export class PromptView {
+  static readonly displayName = "Prompt view";
+  private readonly page: Page;
+  private readonly dialog: Locator;
+  private readonly closeButton: Locator;
+
+  constructor(page: Page) {
+    this.page = page;
+    this.dialog = page.getByRole("dialog").filter({
+      has: page.getByRole("button", { name: "Copy prompt", exact: true }),
+    });
+    this.closeButton = this.dialog.getByRole("button", {
+      name: "Close",
+      exact: true,
+    });
+  }
+
+  /** Expects a prompt's name and text, then closes the view. */
+  @step
+  async expectAndClose(name: string, text: string): Promise<void> {
+    await expect(this.dialog.getByText(name, { exact: true })).toBeVisible();
+    await expect(this.dialog.getByText(text, { exact: true })).toBeVisible();
+    await this.closeButton.click();
     await expect(this.dialog).toBeHidden();
   }
 }

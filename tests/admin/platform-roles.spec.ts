@@ -19,13 +19,17 @@ test.describe("Platform roles", () => {
   });
 
   test.describe("A platform admin grants and withdraws platform roles", () => {
-    test.fixme("A user granted a platform role holds it", () => {
-      // Planned: grants a platform role in the technical console.
-      // admin opens the console section "Platform roles"
-      // admin grants the platform role "Platform observer" to secondUser
-      // admin sees that secondUser holds the platform role "Platform observer"
-      // admin withdraws the platform role "Platform observer" from secondUser
-      // admin sees that secondUser no longer holds the platform role "Platform observer"
-    });
+    test.fixme(
+      "A user granted a platform role holds it",
+      { tag: "@extended" },
+      () => {
+        // Planned: grants a platform role, which no fixture withdraws.
+        // admin opens the console section "Platform roles"
+        // admin grants the platform role "Platform observer" to secondUser
+        // admin sees that secondUser holds the platform role "Platform observer"
+        // admin withdraws the platform role "Platform observer" from secondUser
+        // admin sees that secondUser no longer holds the platform role "Platform observer"
+      },
+    );
   });
 });

@@ -6,7 +6,7 @@ import { SettingsError } from "./settings-error.ts";
 
 export type Environment = Readonly<Record<string, string | undefined>>;
 
-/** The repository's root folder, where `.env` and `env-config.json` live. */
+/** The repository's root folder, where `.env`, `env-config.json` and `sign-in.json` live. */
 export const PROJECT_ROOT = join(import.meta.dirname, "..", "..");
 
 export function loadDotEnv(root: string = PROJECT_ROOT): void {

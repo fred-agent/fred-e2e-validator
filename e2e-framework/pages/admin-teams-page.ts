@@ -13,6 +13,12 @@ import { step } from "./step.ts";
 export type AdminTeamsButton = "Create team";
 
 /**
+ * An invitation link of a team. A step title shows an object as "…", and the
+ * link admits whoever follows it, so its address stays out of reports.
+ */
+export type InvitationLink = Readonly<{ address: string }>;
+
+/**
  * The technical console's Teams page, where the platform admin creates and
  * edits teams and chooses the teams every new user joins.
  */
@@ -85,6 +91,12 @@ export class AdminTeamsPage {
     await expect(this.createTeamButton).toBeVisible();
   }
 
+  /** Expects the list of the platform's existing teams to show a team. */
+  @step
+  async expectTeamsListed(): Promise<void> {
+    await expect(this.teams.rows.first()).toBeVisible();
+  }
+
   /**
    * The default-team field accepts input once the current default teams have
    * loaded.
@@ -100,16 +112,37 @@ export class AdminTeamsPage {
     await expectButtonVisible(this.buttons[name]);
   }
 
-  /** Creates a team with one admin; the list then shows it. */
+  /** Creates a team with its admins; the list then shows it. */
   @step
   async createTeam(
     name: string,
     description: string,
-    admin: Account,
+    admins: readonly Account[],
   ): Promise<void> {
     await this.createTeamButton.click();
-    await this.createTeamDialog.submit(name, description, admin);
+    await this.createTeamDialog.submit(name, description, admins);
     await this.expectListed(name);
+  }
+
+  /**
+   * Fills "Create team" with the name of a listed team; the application
+   * refuses it and the form is cancelled, so the list holds the one team of
+   * that name.
+   */
+  @step
+  async expectExistingNameRefused(
+    name: string,
+    description: string,
+    admin: Account,
+  ): Promise<void> {
+    await this.expectListed(name);
+    await this.createTeamButton.click();
+    await this.createTeamDialog.submitAndExpectNameRefused(
+      name,
+      description,
+      admin,
+    );
+    await expect(this.edit(name)).toHaveCount(1);
   }
 
   /** Opens a listed team's edit form, expects its name and closes it unsaved. */
@@ -119,6 +152,75 @@ export class AdminTeamsPage {
     await this.edit(name).click();
     await this.editTeamDialog.expectName(name);
     await this.editTeamDialog.close();
+  }
+
+  /** Renames a listed team in its edit form; the list then shows the new name. */
+  @step
+  async rename(name: string, next: string): Promise<void> {
+    await this.expectListed(name);
+    await this.edit(name).click();
+    await this.editTeamDialog.rename(name, next);
+    await this.expectListed(next);
+  }
+
+  /** Expects a team listed under a name, and none under another. */
+  @step
+  async expectListedInstead(name: string, instead: string): Promise<void> {
+    await this.expectListed(name);
+    await expect(this.edit(instead)).toHaveCount(0);
+  }
+
+  /**
+   * Turns a listed team's link access on or off; the checkbox then shows the
+   * choice. The checkbox is a native input under a styled switch, which its
+   * label element, without a text of its own, draws and receives the click.
+   */
+  @step
+  async setLinkAccess(name: string, on: boolean): Promise<void> {
+    const access = this.row(name).getByRole("checkbox", {
+      name: `Link access ${name}`,
+      exact: true,
+    });
+    if (on) await expect(access).not.toBeChecked();
+    else await expect(access).toBeChecked();
+    // The inner locator of a filter is looked up inside each label, so it
+    // starts from the page.
+    await this.row(name)
+      .locator("label")
+      .filter({
+        has: this.page.getByRole("checkbox", {
+          name: `Link access ${name}`,
+          exact: true,
+        }),
+      })
+      .click();
+    if (on) await expect(access).toBeChecked();
+    else await expect(access).not.toBeChecked();
+  }
+
+  /** Creates an invitation link of a listed team and returns it. */
+  @step
+  async createInvitationLink(name: string): Promise<InvitationLink> {
+    await this.openInvitations(name);
+    const address = await this.invitationsDialog.createLink(name);
+    await this.invitationsDialog.close(name);
+    return Object.freeze({ address });
+  }
+
+  /** Revokes the one invitation link of a listed team. */
+  @step
+  async revokeInvitationLink(name: string): Promise<void> {
+    await this.openInvitations(name);
+    await this.invitationsDialog.revokeOnlyLink(name);
+    await this.invitationsDialog.close(name);
+  }
+
+  private async openInvitations(name: string): Promise<void> {
+    await this.expectListed(name);
+    await this.row(name)
+      .getByRole("button", { name: "Manage links", exact: true })
+      .click();
+    await this.invitationsDialog.expectShown(name);
   }
 
   /** Opens a listed team's invite links and closes them without a change. */

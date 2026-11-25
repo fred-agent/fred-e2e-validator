@@ -24,6 +24,13 @@ export class MemberTable {
     return this.table.row(account.username);
   }
 
+  /** The menu of a member's row, which has no name: the row's button that opens a list. */
+  private menu(account: Account): Locator {
+    return this.row(account)
+      .getByRole("button")
+      .and(this.page.locator('[aria-haspopup="listbox"]'));
+  }
+
   private role(account: Account, role: TeamRole): Locator {
     return this.row(account).getByRole("button", { name: role, exact: true });
   }
@@ -55,6 +62,36 @@ export class MemberTable {
       "aria-pressed",
       "true",
     );
+  }
+
+  /** Removes a listed member through "Delete" of its row; the row disappears. */
+  @step
+  async remove(account: Account): Promise<void> {
+    await this.chooseDelete(account);
+    await expect(this.row(account)).toHaveCount(0);
+  }
+
+  /** Expects a listed member's roles to be shown but not changeable. */
+  @step
+  async expectRolesLocked(account: Account): Promise<void> {
+    await expect(this.role(account, "Admin")).toBeDisabled();
+  }
+
+  /** Clicks a role that a listed member holds, to take it away. */
+  @step
+  async clickHeldRole(account: Account, role: TeamRole): Promise<void> {
+    await this.expectRole(account, role);
+    await this.role(account, role).click();
+  }
+
+  /** Chooses "Delete" in the menu of a listed member's row. */
+  @step
+  async chooseDelete(account: Account): Promise<void> {
+    await this.menu(account).click();
+    await this.page
+      .getByRole("listbox")
+      .getByRole("option", { name: "Delete", exact: true })
+      .click();
   }
 
   /**

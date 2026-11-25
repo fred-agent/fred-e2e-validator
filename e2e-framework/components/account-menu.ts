@@ -4,10 +4,11 @@ import { step } from "../pages/step.ts";
 
 /**
  * The account button appears after sign-in and acceptance of the terms, once
- * the page has loaded. Its accessible name ends in "'s account".
+ * the page has loaded. Its accessible name ends in "'s account", or starts
+ * with "Compte de " for an account whose language is French.
  */
 export function accountMenuButton(page: Page): Locator {
-  return page.getByRole("button", { name: /'s account$/ });
+  return page.getByRole("button", { name: /('s account$|^Compte de )/ });
 }
 
 /**
@@ -20,15 +21,17 @@ export class AccountMenu {
   private readonly trigger: Locator;
   private readonly menu: Locator;
   private readonly profile: Locator;
+  // The picture has no name: a decorative image, found by its element.
+  private readonly picture: Locator;
 
   constructor(page: Page) {
     this.page = page;
     this.trigger = accountMenuButton(page);
     this.menu = page.getByRole("menu");
     this.profile = this.menu.getByRole("menuitem", {
-      name: "Profile",
-      exact: true,
+      name: /^(Profile|Profil)$/,
     });
+    this.picture = this.trigger.locator("img");
   }
 
   private async open(): Promise<void> {
@@ -47,6 +50,23 @@ export class AccountMenu {
     await this.open();
     await expect(this.menu).toContainText(account.email);
     await this.close();
+  }
+
+  /**
+   * Expects the account's picture, which the browser has loaded: an image
+   * that has not loaded, or failed to, has no width of its own.
+   */
+  @step
+  async expectPicture(): Promise<void> {
+    await expect(this.picture).toBeVisible();
+    await expect(this.picture).not.toHaveJSProperty("naturalWidth", 0);
+  }
+
+  /** Expects the account's initials, shown without a picture. */
+  @step
+  async expectInitials(): Promise<void> {
+    await expect(this.trigger).toHaveText(/^\p{L}{1,3}$/u);
+    await expect(this.picture).toHaveCount(0);
   }
 
   /** Opens the profile and waits for the browser to reach the profile page. */

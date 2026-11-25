@@ -41,13 +41,17 @@ export const PAGE_AT_FAILURE = "page at failure";
 /** The first line of the error that names a factory fixture's failed removals. */
 export const REMOVAL_FAILED = "These removals failed:";
 
-/** Shown when the sign-in form rejects the account. */
+/** Shown when the sign-in pages reject the account, or stay open. */
 export const SIGN_IN_FAILED =
-  "The sign-in did not finish: check the user name and the password of the account.";
+  "The sign-in did not finish: check the user name and the password of the account, and the steps of sign-in.json.";
 
-/** Shown when the form accepts the account but the next page never appears. */
+/** Shown when the first sign-in page never appears. */
+export const SIGN_IN_NOT_SHOWN =
+  "The first sign-in page did not show: check the first step of sign-in.json.";
+
+/** Shown when the steps of the sign-in pages end but the application never appears. */
 export const FRED_NOT_SHOWN =
-  "The form accepted the sign-in, but Fred showed neither its terms nor its signed-in page.";
+  "The steps of sign-in.json ended, but Fred showed neither its terms nor its signed-in page: check that they reach the end of the sign-in pages.";
 
 /** What they say when a removal finds no folder at all. */
 export const NO_FOLDER_LISTED =

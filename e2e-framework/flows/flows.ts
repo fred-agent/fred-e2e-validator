@@ -61,6 +61,14 @@ export class Flows {
     });
   }
 
+  /** A space's prompts, as any member opens them, once the page shows the prompt list. */
+  async openPrompts(space: Space): Promise<void> {
+    await flowStep(`Open the prompts of "${space.name}"`, async () => {
+      await this.goToSpaceSection(space, "Prompts");
+      await this.pages.prompts.expectShown();
+    });
+  }
+
   /** A folder of a space's resources, as any member opens it. */
   async openFolder(folder: Folder): Promise<void> {
     await flowStep(
@@ -129,12 +137,14 @@ export class Flows {
     });
   }
 
-  /** The signed-in user's profile, from the account menu of the home page. */
+  /**
+   * The signed-in user's profile, from the account menu of the home page,
+   * once the bootstrap response, which holds the profile picture, has loaded.
+   */
   async openProfile(): Promise<void> {
     await flowStep("Open the profile", async () => {
       const { home, accountMenu, profile } = this.pages;
-      await home.open();
-      await home.expectShown();
+      await home.openWithSpaces();
       await accountMenu.openProfile();
       await profile.expectShown();
     });

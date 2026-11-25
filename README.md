@@ -17,6 +17,7 @@ tests/<area>/<name>.spec.ts     the test files, by area
 test-data/test-data.json        the values the tests use
 test-data/uploads/              the files the tests upload
 env-config.json                 Fred's address and how the tests run
+sign-in.json                    the steps of the sign-in pages
 .env                            the accounts, never committed
 .env.example                    the keys of .env, without values
 playwright.config.ts            Playwright's configuration
@@ -60,7 +61,13 @@ environment keep their values.
 Account set 1 serves the first worker, set 2 the second, and so on: a run of
 two workers needs sets 1 and 2. Global setup stops before a browser starts
 if either set is incomplete. The accounts of a set, and of different
-sets, must be different accounts.
+sets, must be different accounts. An environment whose `excludeTags` holds
+`@extended` may give one account, a platform administrator, to all four
+names: the tests it runs use only `admin` and `member`. An account's
+language is English and it has no profile picture; a test that changes
+either puts it back. A setting the account never chose, such as its theme,
+is chosen afterwards with the value it had, as Fred's pages cannot undo a
+choice.
 
 ## env-config.json
 
@@ -98,6 +105,72 @@ their margin of 10 seconds.
 No variable overrides these values; one run's options are Playwright's
 command line.
 
+## sign-in.json
+
+`sign-in.json` holds the steps of the environment's sign-in pages, in order.
+The committed file describes Keycloak's own form:
+
+```json
+[
+  { "fill": "Username or email", "with": "username" },
+  { "fill": "Password", "with": "password" },
+  { "click": "Sign In" }
+]
+```
+
+| Step                              | Does                                                                                               |
+| --------------------------------- | -------------------------------------------------------------------------------------------------- |
+| `{ "click": text }`               | Clicks the button or the link with this name                                                       |
+| `{ "fill": text, "with": value }` | Fills the field with this label or placeholder; `value` is `username` or `password`, the account's |
+
+A text is the whole text, with its capitals. The name of a button or a link
+is its [accessible name](https://playwright.dev/docs/locators#locate-by-role),
+which is the text the page shows unless the page gives it another one. The
+last step is a click, which submits the last page. A list names no page: the
+steps of one page or several stand one after the other, as an action waits
+for its element. An environment with several pages:
+
+```json
+[
+  { "click": "Company SSO" },
+  { "fill": "someone@example.com", "with": "username" },
+  { "click": "Next" },
+  { "fill": "Password", "with": "password" },
+  { "click": "Sign in" }
+]
+```
+
+A working copy whose Fred signs in through other pages sets its own list and
+does not commit it. The locator picker of
+[Playwright's code generator](https://playwright.dev/docs/codegen#generating-locators)
+shows the names and texts of each page. Recording is stopped first, so that
+the generator writes nothing that is entered on the way to the next page:
+
+```bash
+npx playwright codegen --lang=en-US <address>
+```
+
+A fill takes the label as the page shows it, with a mark such as an asterisk,
+where the picker shows the field's name without it.
+
+Global setup stops a run before a browser starts when the file is missing, is
+not JSON, or is not a list as above, and names `sign-in.json` and the number
+of a step that is wrong. The limits of a list:
+
+- Every step is carried out. A page that shows only sometimes, a one-time
+  code, a CAPTCHA, an iframe and a popup window are not supported.
+- A click fails when two visible buttons or links have its name, and a fill
+  when two visible fields have its text. A field can be named by its other
+  text, its label or its placeholder.
+- A field hidden by its opacity or its position counts as visible, and a step
+  can fill it on an earlier page.
+- The first and the last text show on the sign-in pages only, not in Fred, and
+  a first sign-in page that shows on every load is not supported.
+- Two pages in a row with one text have a step between them.
+- A list without a fill signs in the account the environment chooses.
+- After "Disconnect" the first sign-in page shows again; otherwise
+  `excludeTags` with `@extended` leaves out the tests that sign out.
+
 ## Run the tests
 
 ```bash
@@ -127,13 +200,18 @@ as a `tests/documents/upload-limits.spec.ts`. `--grep` selects tags and
 `--workers` sets one run's workers. The list loads the tests without a Fred
 and without `.env`.
 
-Open the HTML step report with `make report`. Each failed test includes a
-JSON timeline of its steps, their start offsets, durations and outcomes.
+The default run produces the filtered HTML report. Open it with `make report`.
+An override such as `--reporter=html` replaces the filter and stops the run
+before tests start. Discovery can use `--list --reporter=list` or
+`--list --reporter=json`.
+
+Each failed test includes a JSON timeline of its steps, their start offsets,
+durations and outcomes.
 The report and run log may show synthetic usernames. Account passwords are excluded.
 Normal runs keep browser traces, screenshots and video recording off.
 Keep generated reports, including `docker-out/`, out of Git and issue
-attachments. Raw diagnostic captures from other reporter or tracing options
-can contain credentials, session cookies and page contents.
+attachments. Raw diagnostic captures such as browser traces can contain
+credentials, session cookies and page contents.
 [Handling Playwright artifacts](https://playwright.dev/docs/ci-intro#properly-handling-secrets)
 
 Playwright's documentation covers
@@ -212,9 +290,29 @@ ends and when the service starts; the run page lists the team's own.
 `keepRuns` of the chart's values, from 1 to 1000, sets the number; on the
 local k3d instance, in `deploy/k3d/values-local.yaml`.
 
+The image holds the `sign-in.json` of the checkout it is built from; an image
+for several environments is built from the committed file. A release for an
+environment with other sign-in pages gives its whole list in `signIn` of the
+chart's values, each text in quotes, as YAML reads a text such as `No` without
+them as a boolean:
+
+```yaml
+signIn:
+  - { click: "Company SSO" }
+  - { fill: "Username", with: "username" }
+  - { fill: "Password", with: "password" }
+  - { click: "Sign in" }
+```
+
+A release without `signIn`, or with `signIn` null, uses the image's file. An
+upgrade that removes `signIn` or takes another chart version does not use
+Helm's `--reuse-values`, which keeps the release's list and the earlier
+chart's image tag ([helm upgrade](https://helm.sh/docs/helm/helm_upgrade/)).
+
 A new image rolls the pod out. A change of the chart's values that reaches
-only a ConfigMap, such as `envConfig.workers` or `keepRuns`, takes effect
-after `kubectl rollout restart statefulset/fred-e2e-tests`. A Fred at a
+only a ConfigMap, such as `envConfig.workers`, `keepRuns` or another list in
+`signIn`, takes effect after
+`kubectl rollout restart statefulset/fred-e2e-tests`. A Fred at a
 `*.localhost` address needs the relay, which the chart sets up from the
 Fred address and `localRelay.ingress`.
 

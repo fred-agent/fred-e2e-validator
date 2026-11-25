@@ -10,8 +10,14 @@ import { AnnouncementsPage } from "./announcements-page.ts";
 import { ChatPage } from "./chat-page.ts";
 import { AnalyticsPage } from "./analytics-page.ts";
 import { AppsPage } from "./apps-page.ts";
+import {
+  ActivityPage,
+  CorpusAuditPage,
+  PlatformPromptsPage,
+} from "./console-views-pages.ts";
 import { FeaturesPage } from "./features-page.ts";
 import { HomePage } from "./home-page.ts";
+import { JoinPage } from "./join-page.ts";
 import { MarketplacePage } from "./marketplace-page.ts";
 import { MarketplaceSettingsPage } from "./marketplace-settings-page.ts";
 import type { PageObjectClass } from "./page-object.ts";
@@ -30,6 +36,7 @@ import {
   TeamParametersPage,
 } from "./team-sections-pages.ts";
 import { TermsPage } from "./terms-page.ts";
+import { UserInterfacePage } from "./user-interface-page.ts";
 import { WikiPage } from "./wiki-page.ts";
 
 // Every page object and component the `pages` of one browser page hold, by
@@ -58,6 +65,11 @@ const registry = {
   adminConsole: AdminConsole,
   adminTeams: AdminTeamsPage,
   platformRoles: PlatformRolesPage,
+  activity: ActivityPage,
+  corpusAudit: CorpusAuditPage,
+  platformPrompts: PlatformPromptsPage,
+  userInterface: UserInterfacePage,
+  join: JoinPage,
   announcements: AnnouncementsPage,
   features: FeaturesPage,
   marketplaceSettings: MarketplaceSettingsPage,

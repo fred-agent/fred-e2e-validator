@@ -6,7 +6,7 @@
 // the agents page.
 import { test, type TemporaryTeam } from "../../e2e-framework/fixtures/test.ts";
 
-test.describe("Agent lifecycle", () => {
+test.describe("Agent lifecycle", { tag: "@team" }, () => {
   let team: TemporaryTeam;
 
   test.beforeEach(async ({ teams, testData }) => {
@@ -113,26 +113,34 @@ test.describe("Agent lifecycle", () => {
     });
   });
 
-  test.describe("A reader sees agents without changing them", () => {
-    test("A reader sees no create action and no card menu", async ({
-      admin,
-      secondUser,
-      agents,
-    }) => {
-      const agent = await test.step("admin creates an agent in the team", () =>
-        agents.create(admin, team, "agent"));
-      await test.step("admin opens the members of the team and adds secondUser", async () => {
-        await admin.flows.openTeamMembers(team);
-        await admin.pages.teamMembers.addMember(secondUser.account, team.name);
+  test.describe(
+    "A reader sees agents without changing them",
+    { tag: "@extended" },
+    () => {
+      test("A reader sees no create action and no card menu", async ({
+        admin,
+        secondUser,
+        agents,
+      }) => {
+        const agent =
+          await test.step("admin creates an agent in the team", () =>
+            agents.create(admin, team, "agent"));
+        await test.step("admin opens the members of the team and adds secondUser", async () => {
+          await admin.flows.openTeamMembers(team);
+          await admin.pages.teamMembers.addMember(
+            secondUser.account,
+            team.name,
+          );
+        });
+        await test.step("secondUser opens the agents of the team", () =>
+          secondUser.flows.openAgents(team));
+        await test.step('secondUser reloads the agents and does not see "Create Agent"', () =>
+          secondUser.pages.agents.reloadAndExpectButtonAbsent("Create Agent"));
+        await test.step('secondUser reloads the agents and sees the agent without "More actions"', () =>
+          secondUser.pages.agents.reloadAndExpectNoMenu(agent.name));
       });
-      await test.step("secondUser opens the agents of the team", () =>
-        secondUser.flows.openAgents(team));
-      await test.step('secondUser reloads the agents and does not see "Create Agent"', () =>
-        secondUser.pages.agents.reloadAndExpectButtonAbsent("Create Agent"));
-      await test.step('secondUser reloads the agents and sees the agent without "More actions"', () =>
-        secondUser.pages.agents.reloadAndExpectNoMenu(agent.name));
-    });
-  });
+    },
+  );
 
   test.describe("An editor deletes agents", () => {
     test("A deleted agent is no longer listed", async ({ admin, agents }) => {
@@ -148,10 +156,19 @@ test.describe("Agent lifecycle", () => {
   });
 
   test.describe("An editor duplicates an agent", () => {
-    test.fixme("The duplicate is listed next to the original", () => {
-      // admin creates an agent in the team
-      // admin opens the agents of the team and duplicates the agent under a new name
-      // admin reloads the agents and sees the duplicate and the agent
+    test("The duplicate is listed next to the original", async ({
+      admin,
+      agents,
+    }) => {
+      const agent = await test.step("admin creates an agent in the team", () =>
+        agents.create(admin, team, "agent"));
+      const duplicate =
+        await test.step("admin opens the agents of the team and duplicates the agent under a new name", () =>
+          agents.duplicate(admin, agent, "duplicate"));
+      await test.step("admin reloads the agents and sees the duplicate", () =>
+        admin.pages.agents.reloadAndExpectListed(duplicate.name));
+      await test.step("admin reloads the agents and sees the agent", () =>
+        admin.pages.agents.reloadAndExpectListed(agent.name));
     });
   });
 
@@ -168,33 +185,98 @@ test.describe("Agent lifecycle", () => {
         admin.pages.agents.expectCopyDialog(agent.name, team.name));
     });
 
-    test.fixme("The copy dialog shows only teams where the user is an editor", () => {
-      // admin creates an agent in the team
-      // admin creates a second team in which admin holds the Editor role, and a third team in which admin holds no role
-      // admin opens "Copy to…" of the agent
-      // admin sees the second team and not the third among the destinations
+    test("The copy dialog shows only teams where the user is an editor", async ({
+      admin,
+      teams,
+      agents,
+    }) => {
+      const agent = await test.step("admin creates an agent in the team", () =>
+        agents.create(admin, team, "agent"));
+      const second =
+        await test.step("admin creates a second team in which admin also holds the Editor role", () =>
+          teams.create("agents second", { roles: { admin: ["Editor"] } }));
+      const third =
+        await test.step("admin creates a third team in which admin does not hold the Editor role", () =>
+          teams.create("agents third"));
+      await test.step("admin opens the agents of the team", () =>
+        admin.flows.openAgents(team));
+      await test.step('admin opens "Copy to…" of the agent, sees the second team and not the third among the destinations, and closes the dialog', () =>
+        admin.pages.agents.expectCopyDestinations(
+          agent.name,
+          team.name,
+          second.name,
+          third.name,
+        ));
     });
 
-    test.fixme('A name that exists in the other team gets "(copy 1)"', () => {
-      // admin creates an agent in the team
-      // admin creates a second team in which admin can create agents, with an agent of the same name
-      // admin copies the agent to the second team
-      // admin opens the agents of the second team and sees the copy under its name followed by "(copy 1)"
+    test('A name that exists in the other team gets "(copy 1)"', async ({
+      admin,
+      teams,
+      agents,
+      testData,
+    }) => {
+      const agent = await test.step("admin creates an agent in the team", () =>
+        agents.create(admin, team, "agent"));
+      const second =
+        await test.step("admin creates a second team in which admin can create agents", () =>
+          teams.create("agents second", {
+            roles: { admin: ["Editor"] },
+            agentTemplate: testData.agentTemplate,
+          }));
+      const copy =
+        await test.step("admin copies the agent to the second team", () =>
+          agents.copy(admin, agent, second));
+      const numbered =
+        await test.step("admin copies the agent to the second team again", () =>
+          agents.copy(admin, agent, second, `${agent.name} (copy 1)`));
+      await test.step("admin opens the agents of the second team, reloads them and sees the first copy under the agent's name", async () => {
+        await admin.flows.openAgents(second);
+        await admin.pages.agents.reloadAndExpectListed(copy.name);
+      });
+      await test.step('admin reloads the agents and sees the second copy under the agent\'s name followed by "(copy 1)"', () =>
+        admin.pages.agents.reloadAndExpectListed(numbered.name));
     });
 
-    test.fixme("The copy's chosen folders are reset", () => {
-      // admin creates a folder and an agent restricted to it in the team
-      // admin creates a second team in which admin can create agents
-      // admin copies the agent to the second team
-      // admin opens the agents of the second team and sees the copy restricted to no folder
+    test("The copy's chosen folders are reset", async ({
+      admin,
+      teams,
+      agents,
+      folders,
+      testData,
+    }) => {
+      const folder = await test.step("admin creates a folder in the team", () =>
+        folders.create(admin, team, "agent folder"));
+      const agent =
+        await test.step('admin creates an agent in the team and restricts its "Team documents" to the folder', async () => {
+          const created = await agents.create(admin, team, "agent");
+          await admin.pages.agents.restrictTo(created.name, folder.name);
+          return created;
+        });
+      const second =
+        await test.step("admin creates a second team in which admin can create agents", () =>
+          teams.create("agents second", {
+            roles: { admin: ["Editor"] },
+            agentTemplate: testData.agentTemplate,
+          }));
+      const copy =
+        await test.step("admin copies the agent to the second team", () =>
+          agents.copy(admin, agent, second));
+      await test.step("admin opens the agents of the second team", () =>
+        admin.flows.openAgents(second));
+      await test.step('admin reloads the agents, opens the form of the copy, sees "Team documents" restricted to no folder and closes the form unsaved', () =>
+        admin.pages.agents.reloadAndExpectNotRestricted(copy.name));
     });
   });
 
   test.describe("The agent form recommends models", () => {
-    test.fixme("The recommended models are listed first", () => {
-      // admin creates an agent in the team
-      // admin opens the form of the agent and its models
-      // admin sees "Team default model" first among the recommended models
+    test("The recommended models are listed first", async ({
+      admin,
+      agents,
+    }) => {
+      const agent = await test.step("admin creates an agent in the team", () =>
+        agents.create(admin, team, "agent"));
+      await test.step('admin opens the form of the agent, sees "Team default model" first among its models and closes the form unsaved', () =>
+        admin.pages.agents.expectDefaultModelFirst(agent.name));
     });
   });
 });

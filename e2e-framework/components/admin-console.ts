@@ -2,12 +2,18 @@ import { expect, type Locator, type Page } from "@playwright/test";
 import { AdminTeamsPage } from "../pages/admin-teams-page.ts";
 import { AnalyticsPage } from "../pages/analytics-page.ts";
 import { AnnouncementsPage } from "../pages/announcements-page.ts";
+import {
+  ActivityPage,
+  CorpusAuditPage,
+  PlatformPromptsPage,
+} from "../pages/console-views-pages.ts";
 import { FeaturesPage } from "../pages/features-page.ts";
 import { MarketplaceSettingsPage } from "../pages/marketplace-settings-page.ts";
 import { PlatformAccessPage } from "../pages/platform-access-page.ts";
 import { PlatformDataPage } from "../pages/platform-data-page.ts";
 import { PlatformRolesPage } from "../pages/platform-roles-page.ts";
 import { SelfTestPage } from "../pages/self-test-page.ts";
+import { UserInterfacePage } from "../pages/user-interface-page.ts";
 import { step } from "../pages/step.ts";
 import { MainNavigation } from "./main-navigation.ts";
 import { literal } from "./text-patterns.ts";
@@ -19,11 +25,15 @@ import { literal } from "./text-patterns.ts";
 export type ConsoleSection =
   | "Teams"
   | "Platform roles"
+  | "Activity"
   | "Analytics"
+  | "Platform prompts"
   | "Announcements"
+  | "User interface"
   | "Features"
   | "Marketplaces"
   | "Platform data"
+  | "Corpus audit"
   | "Self-test"
   | "Platform access";
 
@@ -73,16 +83,24 @@ export class AdminConsole {
         return new AdminTeamsPage(this.page).expectShown();
       case "Platform roles":
         return new PlatformRolesPage(this.page).expectShown();
+      case "Activity":
+        return new ActivityPage(this.page).expectShown();
       case "Analytics":
         return new AnalyticsPage(this.page).expectShown();
+      case "Platform prompts":
+        return new PlatformPromptsPage(this.page).expectShown();
       case "Announcements":
         return new AnnouncementsPage(this.page).expectShown();
+      case "User interface":
+        return new UserInterfacePage(this.page).expectShown();
       case "Features":
         return new FeaturesPage(this.page).expectShown();
       case "Marketplaces":
         return new MarketplaceSettingsPage(this.page).expectShown();
       case "Platform data":
         return new PlatformDataPage(this.page).expectShown();
+      case "Corpus audit":
+        return new CorpusAuditPage(this.page).expectShown();
       case "Self-test":
         return new SelfTestPage(this.page).expectShown();
       case "Platform access":

@@ -6,11 +6,22 @@ import { test } from "../../e2e-framework/fixtures/test.ts";
 
 test.describe("Resource views", () => {
   test.describe("A member reviews the files of a space", () => {
-    test.fixme("The statistics of the space show files by type", () => {
-      // Planned: these UI tests cannot independently read the stored records for comparison.
-      // member opens the resources of the test space
-      // member opens "Statistics"
-      // member sees the files of the space by type
+    test("The statistics of the space show files by type", async ({
+      member,
+      folders,
+      testData,
+    }) => {
+      const folder =
+        await test.step("member creates a folder in the test space", () =>
+          folders.create(member, testData.space, "statistics"));
+      await test.step('member uploads "e2e-sample.txt" into the folder without processing', async () => {
+        await member.flows.openFolder(folder);
+        await member.pages.resources.upload("e2e-sample.txt", "Upload only");
+      });
+      await test.step('member opens the resources of the test space and "Statistics", and sees the files by type and the type "Text" among their sizes', async () => {
+        await member.flows.openResources(testData.space);
+        await member.pages.resources.showStatisticsAndExpectFileType("Text");
+      });
     });
 
     test("A member sees the imports of the space", async ({

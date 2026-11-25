@@ -1,5 +1,9 @@
 import { expect, type Locator, type Page } from "@playwright/test";
-import { uploadPath, type UploadFile } from "../config/uploads.ts";
+import {
+  uploadPath,
+  type UploadFile,
+  type UploadVersion,
+} from "../config/uploads.ts";
 import { step } from "../pages/step.ts";
 
 /** The "New folder" dialog of a resources page. */
@@ -31,6 +35,12 @@ export class NewFolderDialog {
 /** The ingestion modes of the "Add documents" dialog. */
 export type UploadMode = "Upload & process" | "Upload only";
 
+/** What to do with one file whose name exists in the folder, by the labels of the choices. */
+export type FileDecision = "Replace" | "Skip";
+
+/** What to do with every file whose name exists in the folder, by the labels of the buttons. */
+export type AllFilesDecision = "Replace all" | "Skip all";
+
 /**
  * The "Add documents" drop zone opens the browser's file chooser. The file
  * chooser event supplies the selected file.
@@ -42,6 +52,8 @@ export class AddDocumentsDialog {
   private readonly dropZone: Locator;
   private readonly import: Locator;
   private readonly modeSelect: Locator;
+  // Shown after "Import" while files of these names exist in the folder.
+  private readonly conflicts: Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -57,6 +69,9 @@ export class AddDocumentsDialog {
     this.modeSelect = this.dialog.getByRole("button", {
       name: /^(Upload & process|Upload only)$/,
     });
+    this.conflicts = this.dialog.getByRole("group", {
+      name: /^\d+ files? already exists? in this folder$/,
+    });
   }
 
   /** Imports the file in the selected mode and waits for the dialog to close. */
@@ -66,6 +81,38 @@ export class AddDocumentsDialog {
     mode: UploadMode,
     timeout: number,
   ): Promise<void> {
+    await this.chooseFiles([file], "original", mode);
+    await this.import.click();
+    await expect(this.dialog).toBeHidden({ timeout });
+  }
+
+  /**
+   * Imports the changed version of files whose names exist in the folder: the
+   * dialog asks what to do, the decision is given for the one file or for
+   * all, and the dialog closes after the second "Import".
+   */
+  @step
+  async submitChanged(
+    files: readonly UploadFile[],
+    mode: UploadMode,
+    decision: FileDecision | AllFilesDecision,
+    timeout: number,
+  ): Promise<void> {
+    await this.chooseFiles(files, "changed", mode);
+    await this.import.click();
+    await expect(this.conflicts).toBeVisible({ timeout });
+    await expect(this.import).toBeDisabled();
+    await this.decide(files, decision);
+    await this.import.click();
+    await expect(this.dialog).toBeHidden({ timeout });
+  }
+
+  /** Chooses the mode, then the files. */
+  private async chooseFiles(
+    files: readonly UploadFile[],
+    version: UploadVersion,
+    mode: UploadMode,
+  ): Promise<void> {
     await this.modeSelect.click();
     await this.page.getByRole("option", { name: mode, exact: true }).click();
     await expect(
@@ -73,9 +120,32 @@ export class AddDocumentsDialog {
     ).toBeVisible();
     const fileChooser = this.page.waitForEvent("filechooser");
     await this.dropZone.click();
-    await (await fileChooser).setFiles(uploadPath(file));
-    await this.import.click();
-    await expect(this.dialog).toBeHidden({ timeout });
+    await (
+      await fileChooser
+    ).setFiles(files.map((file) => uploadPath(file, version)));
+  }
+
+  /** Gives a decision: the button for all files, or each file's own choice. */
+  private async decide(
+    files: readonly UploadFile[],
+    decision: FileDecision | AllFilesDecision,
+  ): Promise<void> {
+    if (decision === "Replace all" || decision === "Skip all") {
+      await this.conflicts
+        .getByRole("button", { name: decision, exact: true })
+        .click();
+      return;
+    }
+    for (const file of files) {
+      const choice = this.conflicts
+        .getByRole("radiogroup", {
+          name: `What to do with “${file}”`,
+          exact: true,
+        })
+        .getByRole("radio", { name: decision, exact: true });
+      await choice.click();
+      await expect(choice).toBeChecked();
+    }
   }
 }
 
@@ -109,10 +179,14 @@ export class RenameDialog {
 
 /** The titles of the confirmation dialogs the page objects confirm. */
 export type ConfirmTitle =
-  "Delete folder" | "Remove document" | "Delete this agent?";
+  | "Delete folder"
+  | "Remove document"
+  | "Delete this agent?"
+  | "Delete prompt?"
+  | "Leave this team?";
 
 /** The confirm buttons of those dialogs, by their labels. */
-export type ConfirmButton = "Confirm" | "Delete";
+export type ConfirmButton = "Confirm" | "Delete" | "Leave";
 
 /** A confirmation dialog, found by its title, such as "Delete folder". */
 export class ConfirmDialog {

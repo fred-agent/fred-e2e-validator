@@ -27,22 +27,22 @@ and `excludeTags` as its `grepInvert`
   ([locale](https://playwright.dev/docs/emulation#locale--timezone)).
 - Importing the configuration needs no `.env`, so the list loads without it
   (README's [Run the tests](README.md#run-the-tests)). UI mode runs global
-  setup before it lists the tests, so it needs `.env`, with the accounts,
-  but no running Fred
+  setup before it lists the tests, so it needs `.env`, with the accounts, and
+  a valid `sign-in.json`, but no running Fred
   ([UI mode](https://playwright.dev/docs/test-ui-mode)).
 
 `e2e-framework/` holds the code the tests import, with a sub-folder per
 role; `app/` and `deploy/` hold the run page, its service, image and chart.
 
-| Folder        | Holds                                                                                                                      |
-| ------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| `fixtures/`   | `test.ts`, the test and its fixtures; the users and their storage states; the factory fixtures; global setup and the relay |
-| `pages/`      | The page objects, their factory, the step decorator and its titles                                                         |
-| `components/` | The parts of Fred's pages: dialogs, tables, menus, navigation, forms; `describePage(page)` of `page-state.ts`              |
-| `flows/`      | The routes through several pages                                                                                           |
-| `config/`     | The readers of `env-config.json`, `.env`, the accounts, the test data and the upload files                                 |
-| `fred-api/`   | Fred's API adapter                                                                                                         |
-| `reporting/`  | The run log reporter, its line format and the failure summary                                                              |
+| Folder        | Holds                                                                                                                                           |
+| ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| `fixtures/`   | `test.ts`, the test and its fixtures; the users and their storage states; the factory fixtures; global setup and the relay                      |
+| `pages/`      | The page objects, their factory, the step decorator and its titles                                                                              |
+| `components/` | The parts of Fred's pages: dialogs, tables, menus, navigation, forms; the actions of the sign-in pages; `describePage(page)` of `page-state.ts` |
+| `flows/`      | The routes through several pages                                                                                                                |
+| `config/`     | The readers of `env-config.json`, `sign-in.json`, `.env`, the accounts, the test data and the upload files                                      |
+| `fred-api/`   | Fred's API adapter                                                                                                                              |
+| `reporting/`  | The run log reporter, its line format and the failure summary                                                                                   |
 
 ## From a test to Fred
 
@@ -66,15 +66,15 @@ pages. A factory fixture acts through a user: the one the test passes, or,
 for a team, the platform administrator's user, whose adapter for Fred's API
 deletes the team.
 
-| Part               | Where                                          | Its job                                                                                    |
-| ------------------ | ---------------------------------------------- | ------------------------------------------------------------------------------------------ |
-| Test file          | `tests/<area>/<name>.spec.ts`                  | The rules (`test.describe`) and cases (`test`) of one part of Fred, with `test.step` calls |
-| User fixture       | `fixtures/users.ts`                            | A browser context per account, signed in, with `account`, `pages` and `flows`              |
-| Factory fixture    | `fixtures/teams.ts`, `folders.ts`, `agents.ts` | Creates a team, a folder or an agent under a unique name and removes it after the test     |
-| Flow               | `flows/`                                       | A route through several pages                                                              |
-| Page object        | `pages/`, registered in `pages/pages.ts`       | The locators, actions and checks of one page of Fred                                       |
-| Component          | `components/`                                  | The locators, actions and checks of a part of Fred's pages                                 |
-| Fred's API adapter | `fred-api/`                                    | Deletes a temporary team                                                                   |
+| Part               | Where                                                                          | Its job                                                                                                                                |
+| ------------------ | ------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------- |
+| Test file          | `tests/<area>/<name>.spec.ts`                                                  | The rules (`test.describe`) and cases (`test`) of one part of Fred, with `test.step` calls                                             |
+| User fixture       | `fixtures/users.ts`                                                            | A browser context per account, signed in, with `account`, `pages` and `flows`                                                          |
+| Factory fixture    | `fixtures/teams.ts`, `folders.ts`, `agents.ts`, `prompts.ts`, `preferences.ts` | Creates a team, a folder, an agent or a prompt under a unique name and removes it after the test, or changes a setting and restores it |
+| Flow               | `flows/`                                                                       | A route through several pages                                                                                                          |
+| Page object        | `pages/`, registered in `pages/pages.ts`                                       | The locators, actions and checks of one page of Fred                                                                                   |
+| Component          | `components/`                                                                  | The locators, actions and checks of a part of Fred's pages, or of the sign-in pages                                                    |
+| Fred's API adapter | `fred-api/`                                                                    | Reads a temporary team's id from its creation response and deletes the team by that id                                                 |
 
 One browser context per account keeps each account's state apart, so a test
 with two accounts never signs one out to sign the other in
@@ -88,6 +88,8 @@ e2e-framework/fixtures/
 ├── teams.ts           teams.create(…): works through flows and page objects, removes the team in its teardown
 ├── folders.ts         folders.create(…): works through flows and page objects, removes the folder in its teardown
 ├── agents.ts          agents.create(…): works through flows and page objects, removes the agent in its teardown
+├── prompts.ts         prompts.create(…): works through flows and page objects, removes the prompt in its teardown
+├── preferences.ts     changes a profile setting through the profile page, restores it in its teardown
 ├── global-setup.ts
 └── relay.ts
 ```
@@ -107,11 +109,12 @@ e2e-framework/fixtures/
   example in Playwright's `test.step` documentation
   ([test.step](https://playwright.dev/docs/api/class-test#test-step)). It
   runs the call as a boxed `test.step` titled with its method and arguments.
-  An account argument shows the fixture role and synthetic username. The
-  subtitle shows the class and fixture role, such as `Resources page · member`. Every
-  decorated class has a `page` member; `step.ts` reads the account from a
-  map from Playwright's `Page` to the account, which `TestUsers` and
-  `StorageStates` fill when they open a page.
+  An account argument shows the fixture role and synthetic username, and an
+  object such as an invitation link shows as `…`. The subtitle shows the
+  class and fixture role, for example `Resources page · member`.
+  Every decorated class has a `page` member. When `TestUsers` or
+  `StorageStates` opens a page, it maps the page to its account.
+  `step.ts` uses that map to identify the account for the call.
 - A call to a public method or to a component shows as a nested step, and
   the run log's CAUSE line names the innermost failing class.
 - Playwright compiles the TypeScript it loads, decorators included. Node
@@ -126,10 +129,9 @@ e2e-framework/fixtures/
   `expect(…).toPass` is for a block of several reads that must hold
   together, with an explicit timeout
   ([toPass](https://playwright.dev/docs/test-assertions#expecttopass)).
-- A page object decides what to check from the page alone. Fred's API
-  adapter is the one part that reads a response's content: Fred's
-  bootstrap, the response Fred's frontend loads when it opens, which holds
-  the user's teams.
+- A page object decides what to check from the page alone. The API adapter
+  reads the team creation response to identify the team for teardown and
+  the bootstrap response to check which teams the signed-in user can access.
 - Each action (rename, remove, deactivate, activate, delete, save) ends on a
   sign that follows Fred's confirmation, such as the dialog closed or the
   card updated, before any method reloads the page, so a reload never
@@ -137,17 +139,22 @@ e2e-framework/fixtures/
 - Before a check that something is absent, a page object waits until the
   part of the page it reads has loaded:
 
-| Page                                               | What it waits for before it checks that something is absent                                                                                         |
-| -------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Home page                                          | The "Personal space" link's address turns from `/team/personal/` to `/team/personal-<id>/`, which follows Fred's bootstrap and the teams            |
-| Agents page                                        | "Settings", shown once the team is loaded, and the "Team agents" heading or the empty-list text, shown once the agent list is loaded                |
-| Resources page of a member without the Editor role | The "Storage" meter, shown once the team is loaded; on a team with no storage quota the check fails with a message that says so                     |
-| The resources' folder list                         | Another folder that the space holds, as the empty space's text shows also when the list fails                                                       |
-| A folder's documents                               | A row or "This folder is empty."                                                                                                                    |
-| The agent form's capabilities                      | The heading "Turn on capabilities for your agent" and the first capability switch, which Fred draws together, before a capability is checked absent |
+| Page                                                 | What it waits for before it checks that something is absent                                                                                                                 |
+| ---------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Home page                                            | The "Personal space" link's address turns from `/team/personal/` to `/team/personal-<id>/`, which follows Fred's bootstrap and the teams                                    |
+| Agents page                                          | "Settings" of a team, or the create action of an editor, shown once the space is loaded, and the list's heading or the empty-list text, shown once the agent list is loaded |
+| Resources page of a member without the Editor role   | The "Storage" meter, shown once the team is loaded; on a team with no storage quota the check fails with a message that says so                                             |
+| The resources' folder list                           | Another folder that the space holds, as the empty space's text shows also when the list fails                                                                               |
+| A folder's documents                                 | A row or "This folder is empty."                                                                                                                                            |
+| The agent form's capabilities                        | The heading "Turn on capabilities for your agent" and the first capability switch, which Fred draws together, before a capability is checked absent                         |
+| Team members page of a member without the Admin role | A role of the member, shown disabled once the team is loaded                                                                                                                |
+| Main navigation                                      | "Home"                                                                                                                                                                      |
+| Prompts page                                         | The list's heading or the empty-list text, which a failed list does not show; a card's menu shows once the space is loaded                                                  |
+| The profile and the account menu's picture           | The home page's "Personal space" link, as for the home page: the picture comes with Fred's bootstrap                                                                        |
 
 The console's team list has no such sign: Fred shows "No teams yet." while
-the list loads and when it fails, so no check finds a team absent from it.
+the list loads and when it fails, so a check finds a team absent from it only
+beside a name the list shows, as a renamed team's new name.
 
 ### Flows
 
@@ -201,8 +208,8 @@ factory fixtures; [WRITING-TESTS](WRITING-TESTS.md#a-flow) gives its rules.
   context opened from it loads Fred, which signs in again through Keycloak's
   own cookies without the form.
 - **First load.** A user's first load of Fred waits for one locator: the
-  home page's signed-in account menu, joined by `or()` with the sign-in form
-  and Fred's terms
+  home page's signed-in account menu, joined by `or()` with the element of the
+  first step of `sign-in.json` and Fred's terms
   ([locator.or](https://playwright.dev/docs/api/class-locator#locator-or)).
   A session Fred refuses fails the test, naming the sign-in form or the
   terms, the account and the worker.
@@ -213,7 +220,9 @@ factory fixtures; [WRITING-TESTS](WRITING-TESTS.md#a-flow) gives its rules.
 - **Shared state.** The tests of a worker share each account's preferences,
   personal-space contents and memberships: what a test creates is removed in
   its factory's teardown, and a changed preference is restored as
-  [WRITING-TESTS](WRITING-TESTS.md#setup-and-created-objects) says.
+  [WRITING-TESTS](WRITING-TESTS.md#setup-and-created-objects) says. One
+  account may serve `admin` and `member`, and the tests without `@extended`
+  need no other.
 - After a failed test, each open user's page is described by
   `describePage(page)` of `components/page-state.ts`, a plain function that
   carries no `@step`, and attached as `PAGE_AT_FAILURE`, for the report and
@@ -224,26 +233,37 @@ factory fixtures; [WRITING-TESTS](WRITING-TESTS.md#a-flow) gives its rules.
 [WRITING-TESTS](WRITING-TESTS.md#the-fixtures-a-test-receives) gives the
 call of each factory fixture and what it returns. A team is removed through
 Fred's API team delete, a folder through the resources page with the
-documents in it, and an agent through the agents page.
+documents in it, an agent through the agents page and a prompt through the
+prompts page; a setting is restored through the page that changed it.
 
 - A factory fixture works through flows and page objects, which hold the
   clicks (`createTeam` of the admin teams page, `createFolder` of the
   resources page, `create` of the agents page), and adds the unique name and
   the removal. `agents` creates an agent with the template and the use case of
-  `testData`.
-- It records each thing before it touches Fred, so its teardown also tries
-  the removal of a creation that failed half-way; a removal that finds
-  nothing succeeds, except for a team or a folder the test created and Fred
-  confirmed: it fails when Fred does not list it, as it would otherwise be
-  left behind unnoticed. A folder whose creation Fred did not confirm is
+  `testData`, in a personal space or a team, and records what `duplicate`,
+  `copy` and `importFromMarketplace` create as it records what `create`
+  does. An agent published to the marketplace goes with its removal.
+- `preferences` and `agents.sort` read a setting before they change it and
+  record its restoration first. The restoration chooses the value again,
+  goes to another page of Fred, which keeps the page while Fred saves the
+  setting without a sign, loads Fred again and expects the value. An account
+  whose language is French shows Fred in French on the first load of a
+  restoration: the account menu's button, its "Profile" and the profile's
+  title, "Back" and languages are found in English or in French. A picture
+  cannot be read and put back, so `importPicture` fails for an account that
+  has one.
+- A team is registered for removal when its creation response supplies its
+  id. Other factories record a pending removal before creation so teardown
+  can clean up after a partial setup. Removal of a confirmed team or folder
+  fails if Fred no longer lists it. A folder whose creation Fred did not confirm is
   taken as absent only beside another folder that the space lists. A test
   that deletes a folder itself calls `folders.delete(user, folder)`, after
   which its removal takes it as not confirmed.
 - It is test-scoped and removes what it created in its own teardown, after
   `use`, after a passed, failed or timed-out test
   ([timeouts](https://playwright.dev/docs/test-timeouts)).
-- **Order.** `folders` and `agents` depend on `teams`, and `agents` on
-  `folders`, so Playwright tears a folder down before its team
+- **Order.** `folders`, `agents` and `prompts` depend on `teams`, and
+  `agents` on `folders`, so Playwright tears a folder down before its team
   ([fixtures](https://playwright.dev/docs/test-fixtures)): a folder's
   removal needs the team to reach the folder.
 - **The test's part ends first.** Before its first removal a factory closes
@@ -287,8 +307,9 @@ documents in it, and an agent through the agents page.
   left from `factoryFixtureTimeout`, the time its setup took and the start
   of its teardown, less `REMOVAL_MARGIN_MS` (10 s) for describing a failed
   removal's page, closing its context and raising the combined error.
-- **Worst case.** `teams`, `folders` and `agents` tear down one after
-  another. The users and the other fixtures without a timeout of their own
+- **Worst case.** A test uses at most three factory fixtures, those another
+  one depends on included, such as `agents` with `folders` and `teams`, and
+  they tear down one after another. The users and the other fixtures without a timeout of their own
   tear down within the time Playwright gives the after hooks, the test
   timeout; a worker that stops after a failed test cleans up within the
   test timeout again. For a test on
@@ -303,28 +324,27 @@ A test changes only a team it created.
 - `teams` takes the platform administrator's user lazily, inside `create`
   and in its own teardown, so a test that only creates a folder opens only
   the users it drives.
-- `teams.create(word, options)` is one function that, in order, records the
-  team, creates it in the console as the platform administrator, its only
-  administrator, adds the members, grants the roles, enables the agent
-  template and sets each capability for the team in Admin › Features, as its
-  options name them, all through Fred's pages in the platform
-  administrator's own context. Members and roles are given as account names;
-  [WRITING-TESTS](WRITING-TESTS.md#the-fixtures-a-test-receives) gives why
-  and shows a call.
-- It returns a `TemporaryTeam`: plain data, the name Fred holds, which is
-  what flows need.
+- `teams.create(word, options)` creates the team in the platform
+  administrator's browser context with any additional admins. It adds
+  the specified members, grants the requested roles, and configures the agent
+  template and capabilities in Admin › Features. The options refer to
+  accounts by fixture name.
+  [Fixture example](WRITING-TESTS.md#the-fixtures-a-test-receives)
+- It returns a `TemporaryTeam` containing the name used by flows.
+  `teams.rename(team, word)` uses the console's edit form and returns a
+  `TemporaryTeam` with the new name. Teardown uses the ID from creation.
 - Its removal is Fred's API team delete with the page's own bearer token,
   through Playwright's request API
   ([API testing](https://playwright.dev/docs/api-testing)). `fred-api/`
-  reads the team's id from Fred's bootstrap response and that token from
-  the request the browser sent for it.
+  checks that the team id is in the administrator's bootstrap response and
+  reads the token from the corresponding request.
 - A test of membership or of what Admin › Features enables acts through
   `admin.flows` and `admin.pages`.
 
 ## Names
 
 `uniqueName(word)`, the function a test-scoped fixture of `fixtures/test.ts`
-gives the three factory fixtures, returns `e2e <word> <stamp>`. The stamp is
+gives the factory fixtures, returns `e2e <word> <stamp>`. The stamp is
 the test's start time, worker and test number, so two tests that pass the
 same word on two workers create two names. The `e2e` prefix marks in Fred
 what the tests created.
@@ -335,6 +355,7 @@ what the tests created.
 | ------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------- |
 | Workers, browser, the test, expect and factory fixture timeouts, `excludeTags` | `env-config.json`, committed; the chart renders its own                                   |
 | Fred's address, `fredBaseUrl`                                                  | `env-config.json`, as README's [Set up](README.md#set-up) says; the chart renders its own |
+| The steps of the sign-in pages                                                 | `sign-in.json`, committed; the chart renders one that a release sets                      |
 | Accounts                                                                       | `.env` locally; a Secret in the cluster                                                   |
 | One run's selection and workers                                                | Playwright's command line                                                                 |
 | Test data: the space, the agent template, the use case                         | `test-data/test-data.json`                                                                |
@@ -350,6 +371,16 @@ what the tests created.
   `excludeTags` is the project's `grepInvert`
   ([grepInvert](https://playwright.dev/docs/api/class-testproject#test-project-grep-invert)),
   and a command-line `--grep-invert` adds to it.
+- **`sign-in.json`** is read once and parsed with a strict `zod` schema
+  ([zod: unions](https://zod.dev/api#unions)); README's
+  [sign-in.json](README.md#sign-injson) gives its steps and its limits. Global
+  setup checks it after the accounts; `npx playwright test --list` and the
+  service do not read it. `SignInPage` carries the steps out through
+  `components/sign-in-actions.ts`, which finds an element by role and name,
+  label or placeholder, matched whole and visible
+  ([locators](https://playwright.dev/docs/locators)). The first step's element
+  shows that the sign-in pages have loaded; the last step's, that they are
+  still open.
 - **`.env`** is read with Node's `util.parseEnv`
   ([Node: util.parseEnv](https://nodejs.org/api/util.html#utilparseenvcontent)),
   as README's [Set up](README.md#set-up) describes. The message on any
@@ -393,6 +424,7 @@ the termination grace period derive from the worst case of a teardown
 
 - **Local runs.** The first reporter selects authored steps, fixture roles,
   page summaries and failure descriptions for the list and HTML reporters.
+  Executing tests requires this filter. Discovery can select its own reporter.
   A failed or interrupted test has an in-memory JSON attachment with its step
   timeline. The HTML report includes the attachment. Browser recording is off,
   and the runner discards per-test output on completion.
@@ -408,10 +440,16 @@ the termination grace period derive from the worst case of a teardown
   header counts the tests Playwright loads.
 - **A failed test** has a CAUSE line, naming the innermost failing class,
   and a PAGE line for each `PAGE_AT_FAILURE` attachment, which the report
-  also shows. A sign-in that Fred's form
-  refuses has the cause `SIGN_IN_FAILED`, which says to check the account's
-  user name and password; a sign-in after which Fred shows no page has the
-  cause `FRED_NOT_SHOWN`.
+  also shows. A first sign-in page that does not show has the cause
+  `SIGN_IN_NOT_SHOWN`; a sign-in whose last page stays open or comes back,
+  `SIGN_IN_FAILED`, which says to check the account's user name and password
+  and the steps of `sign-in.json`; a sign-in after which Fred shows no page,
+  `FRED_NOT_SHOWN`. A failed step between them shows its action and text, such
+  as `click("Next")`. A locator that matches several elements has the cause
+  `SEVERAL_ELEMENTS`
+  ([strictness](https://playwright.dev/docs/locators#strictness)). The first
+  problem of `sign-in.json` stands in the report and the run log as global
+  setup names it.
 - **Fred's failed responses.** `testUsers` listens once to every browser
   context the test's fixtures open, the users', the visitor's and the
   removals', for `response` and `requestfailed`, so popups and later pages
@@ -489,15 +527,17 @@ the termination grace period derive from the worst case of a teardown
 
 - **The image** is built on Playwright's own image at the pinned version
   ([Docker](https://playwright.dev/docs/docker)) and holds the service, the
-  support code, the tests, `test-data/`, `env-config.json` and the built
-  run page. Its build runs `npx playwright test --list --reporter=list`, so
-  a test file that does not load fails the build and is named.
+  support code, the tests, `test-data/`, `env-config.json`, `sign-in.json` and
+  the built run page. Its build runs
+  `npx playwright test --list --reporter=list`, so a test file that does not
+  load fails the build and is named.
 - **The chart** `fred-e2e-tests` requires `envConfig` in its values, every
   key of the schema, Fred's address `fredBaseUrl` included, and renders it
-  into a ConfigMap of its own, mounted over the image's `env-config.json`.
-  Its other ConfigMap holds the control plane, the runs folder, retention,
-  the port and the relay. It takes the accounts from the Secret
-  `accounts.existingSecret` names, `fred-e2e-tests-accounts` in
+  into a ConfigMap of its own, mounted over the image's `env-config.json`. A
+  release that sets `signIn` gets a ConfigMap with its `sign-in.json`, mounted
+  over the image's. The service's ConfigMap holds the control plane, the runs
+  folder, retention, the port and the relay. The chart takes the accounts from
+  the Secret `accounts.existingSecret` names, `fred-e2e-tests-accounts` in
   `deploy/k3d/values-local.yaml`, runs at most one pod on the runs volume,
   and is reachable only in the cluster. It computes the pod's termination
   grace period, the worst case of a teardown plus 60 seconds, from
@@ -548,12 +588,13 @@ title path in the same file. Each line of a test list then names one test.
 | A `test.describe` per rule of the product, a `test` per case          | The list and the HTML report show each test under the rule of the product it checks; the run page shows each file's tests by title path                                                                                                                                               |
 | Steps written in the test, each titled for exactly what its body does | A test reads as what it does, and the HTML report and the run log show each step by that title                                                                                                                                                                                        |
 | Planned tests: `test.fixme` with their steps as comments              | Every rule of the product has a test; a search of `tests/` and the run page show what is automated and what is planned, and a planned test's steps are written before it is automated                                                                                                 |
-| Tags `@smoke`, `@model` and `@ppt`                                    | `--grep @smoke` runs a quick check of an environment; `excludeTags` leaves out the tests that need a model or the capability "Generate a presentation" that an environment cannot run                                                                                                 |
+| Tags `@smoke`, `@model`, `@ppt`, `@team` and `@extended`              | `--grep @smoke` runs a quick check of an environment; `excludeTags` leaves out the tests that need a model, the capability "Generate a presentation", a team of their own or several accounts, where an environment cannot run them                                                   |
 | `test-data/test-data.json` and `testData`                             | The values several tests share, the space, the agent template and the use case, are in one committed file, checked by a strict schema and typed in tests                                                                                                                              |
 | `make test TESTS=…`                                                   | One entry point beside the other targets, passing Playwright's own arguments to `npx playwright test`                                                                                                                                                                                 |
 | The check for `*.test.ts` under `e2e-framework/`                      | The support code is checked by running the tests against a local Fred; unit tests belong to the service of the run page                                                                                                                                                               |
 | Tokens left to Fred                                                   | Fred verifies every token: the service passes the caller's token to Fred's control plane on every request, the run page never holds it, and the browser's own session is reused. Nothing in the project creates, signs, verifies or exchanges a token or holds a key or client secret |
 | `env-config.json`                                                     | One reviewed file for Fred's address and how an environment runs the tests; the chart supplies the file of each release                                                                                                                                                               |
+| `sign-in.json`                                                        | The image signs in through the pages of each environment; a release supplies its own steps, and no code holds a text of the sign-in pages                                                                                                                                             |
 | Strict `.env` loader                                                  | `.env` holds only the accounts                                                                                                                                                                                                                                                        |
 | Account sets per worker and global setup's check                      | Each parallel worker uses an account set of its own; a missing variable stops the run before a browser starts                                                                                                                                                                         |
 | Storage states kept in a worker's memory                              | One sign-in per account and worker; every user but `visitor` starts signed in                                                                                                                                                                                                         |

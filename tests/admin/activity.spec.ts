@@ -8,16 +8,17 @@ import { test } from "../../e2e-framework/fixtures/test.ts";
 
 test.describe("Platform activity", () => {
   test.describe("A platform admin sees the platform's background tasks", () => {
-    test.fixme("A platform admin sees the background tasks", () => {
-      // Planned: these UI tests cannot independently read the stored records for comparison.
-      // admin opens the console section "Activity"
-      // admin sees the group of each state the platform's tasks are in, or "No scheduled or running tasks."
+    test("A platform admin sees the background tasks", async ({ admin }) => {
+      await test.step('admin opens the console section "Activity"', () =>
+        admin.flows.openConsoleSection("Activity"));
+      await test.step('admin sees a group of the platform\'s tasks by state, or "No tasks in progress"', () =>
+        admin.pages.activity.expectTaskGroups());
     });
   });
 
   test.describe("A platform admin dismisses a task that failed or was cancelled", () => {
     test.fixme("A dismissed task no longer asks for attention", () => {
-      // Planned: changes the task list every platform admin sees.
+      // Planned: a dismissed task cannot be put back.
       // admin opens the console section "Activity"
       // admin dismisses a task that failed
       // admin sees the task without "Dismiss"

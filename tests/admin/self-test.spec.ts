@@ -28,7 +28,7 @@ test.describe("Self-test", () => {
 
   test.describe("A self-test run reports a result per area", () => {
     test.fixme("A finished run shows a result for each area", () => {
-      // Planned: runs the self-test.
+      // Planned: the self-test talks to agents through conversations.
       // admin opens the console section "Self-test"
       // admin runs every area with "Run all"
       // admin sees a result for each area once the run has finished

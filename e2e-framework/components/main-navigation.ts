@@ -28,6 +28,15 @@ export class MainNavigation {
     await expect(this.bar).toBeVisible();
   }
 
+  /** Expects no entry of this name once the navigation shows "Home". */
+  @step
+  async expectEntryAbsent(name: MainNavigationEntry): Promise<void> {
+    await expect(
+      this.bar.getByRole("button", { name: "Home", exact: true }),
+    ).toBeVisible();
+    await expect(this.entry(name)).toHaveCount(0);
+  }
+
   /** Clicks an entry; the page it opens says when it has loaded. */
   @step
   async goTo(name: MainNavigationEntry): Promise<void> {

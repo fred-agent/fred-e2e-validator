@@ -1,5 +1,7 @@
 import { expect, type Locator, type Page } from "@playwright/test";
+import { ImportAgentDialog } from "../components/agent-dialogs.ts";
 import { MainNavigation } from "../components/main-navigation.ts";
+import { literal } from "../components/text-patterns.ts";
 import { step } from "./step.ts";
 
 /** The kinds of content, by their labels in the marketplace's side panel. */
@@ -33,6 +35,7 @@ export class MarketplacePage {
   private readonly page: Page;
   private readonly searches: Readonly<Record<MarketplaceSearch, Locator>>;
   private readonly navigation: MainNavigation;
+  private readonly importDialog: ImportAgentDialog;
 
   constructor(page: Page) {
     this.page = page;
@@ -48,6 +51,60 @@ export class MarketplacePage {
       }),
     };
     this.navigation = new MainNavigation(page);
+    this.importDialog = new ImportAgentDialog(page);
+  }
+
+  /**
+   * A community agent's card, by the agent's name. The cards and their names
+   * have no ARIA role or test ID: their CSS module classes contain
+   * "agentCard" and "agentName".
+   */
+  private agent(name: string): Locator {
+    return this.page
+      .getByRole("main")
+      .locator('[class*="agentCard"]')
+      .filter({
+        has: this.page
+          .locator('[class*="agentName"]')
+          .filter({ hasText: new RegExp(`^${literal(name)}$`) }),
+      });
+  }
+
+  /** The like button of an agent's card, named by its count of likes. */
+  private like(name: string): Locator {
+    return this.agent(name).getByRole("button", {
+      name: /^Like this agent \(\d+ likes?\)$/,
+    });
+  }
+
+  @step
+  async expectAgentListed(name: string): Promise<void> {
+    await expect(this.agent(name)).toBeVisible();
+  }
+
+  /** Likes an agent the user has not liked; the button is then pressed. */
+  @step
+  async likeAgent(name: string): Promise<void> {
+    await expect(this.like(name)).toHaveAttribute("aria-pressed", "false");
+    await this.like(name).click();
+    await expect(this.like(name)).toHaveAttribute("aria-pressed", "true");
+  }
+
+  /** Expects an agent's count of likes. */
+  @step
+  async expectLikes(name: string, count: number): Promise<void> {
+    await expect(this.like(name)).toHaveAccessibleName(
+      `Like this agent (${count} ${count === 1 ? "like" : "likes"})`,
+    );
+  }
+
+  /** Imports a community agent into a space. */
+  @step
+  async importAgent(name: string, space: string): Promise<void> {
+    await this.agent(name)
+      .getByRole("button", { name: /^Import this agent / })
+      .click();
+    await this.importDialog.importInto(name, space);
   }
 
   /** A kind's link in the side panel. */

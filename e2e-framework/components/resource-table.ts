@@ -17,7 +17,12 @@ const DOCUMENT_STATUSES = [
 export type DocumentStatus = (typeof DOCUMENT_STATUSES)[number];
 
 /** The options of a row's "More actions" that the page objects choose. */
-export type RowAction = "Delete" | "Download" | "Rename";
+export type RowAction =
+  | "Delete"
+  | "Download"
+  | "Rename"
+  | "Exclude from search"
+  | "Include in search";
 
 /**
  * The folder and document table of a resources page, a data table whose rows
@@ -61,10 +66,10 @@ export class ResourceTable {
     return this.row(name).isVisible();
   }
 
-  /** Opens a folder with its name button. */
+  /** Opens a folder with a double-click on its name; one click selects its row. */
   @step
   async openFolder(name: string): Promise<void> {
-    await this.row(name).getByRole("button", { name, exact: true }).click();
+    await this.row(name).getByRole("button", { name, exact: true }).dblclick();
   }
 
   /** Opens a row's "More actions" list and chooses an option. */
@@ -80,6 +85,39 @@ export class ResourceTable {
     options: readonly RowAction[],
   ): Promise<void> {
     await this.menu.expectOptions(this.row(name), options);
+  }
+
+  /** Expects a document's row to show a size in bytes, such as "57 byte". */
+  @step
+  async expectSize(
+    name: string,
+    bytes: number,
+    timeout?: number,
+  ): Promise<void> {
+    await expect(
+      this.row(name).getByText(`${bytes} byte`, { exact: true }),
+    ).toBeVisible(timeout === undefined ? {} : { timeout });
+  }
+
+  /** Expects a document's row to show where the document came from: "Uploaded". */
+  @step
+  async expectMarkedUploaded(name: string): Promise<void> {
+    await expect(
+      this.row(name).getByText("Uploaded", { exact: true }),
+    ).toBeVisible();
+  }
+
+  /** Expects the mark of a document that agents do not search. */
+  @step
+  async expectExcludedFromSearch(name: string): Promise<void> {
+    await expect(this.excludedMark(name)).toBeVisible();
+  }
+
+  /** Expects a listed document without that mark. */
+  @step
+  async expectIncludedInSearch(name: string): Promise<void> {
+    await expect(this.row(name)).toBeVisible();
+    await expect(this.excludedMark(name)).toHaveCount(0);
   }
 
   /** Opens a document's preview with the "Preview" button of its row. */
@@ -159,6 +197,11 @@ export class ResourceTable {
         { cause: error },
       );
     }
+  }
+
+  /** The mark of a document that agents do not search. */
+  private excludedMark(name: string): Locator {
+    return this.row(name).getByLabel("Excluded from search", { exact: true });
   }
 
   /**

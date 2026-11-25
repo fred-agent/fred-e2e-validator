@@ -33,19 +33,36 @@ test.describe("Platform analytics", () => {
   });
 
   test.describe("The analytics a user sees depend on their role", () => {
-    test.fixme("A team admin does not see the platform's analytics", () => {
-      // admin creates a team with secondUser as a member
-      // admin opens the members of the team and gives secondUser the role "Admin"
-      // secondUser loads the home page and does not see the platform's analytics
-    });
+    test(
+      "A team admin does not see the platform's analytics",
+      { tag: ["@team", "@extended"] },
+      async ({ teams, secondUser }) => {
+        await test.step('admin creates a team with secondUser as a member with the role "Admin"', () =>
+          teams.create("analytics", {
+            members: ["secondUser"],
+            roles: { secondUser: ["Admin"] },
+          }));
+        await test.step('secondUser loads the home page and does not see "Technical console", where the platform\'s analytics are', async () => {
+          await secondUser.pages.home.openWithSpaces();
+          await secondUser.pages.navigation.expectEntryAbsent(
+            "Technical console",
+          );
+        });
+      },
+    );
   });
 
   test.describe("An export holds the analytics of the chosen period and scope", () => {
-    test.fixme("An export of the last 7 days covers those days", () => {
-      // Planned: exports the platform's analytics from the technical console.
-      // admin opens the console section "Analytics" and chooses the period "Last 7 days"
-      // admin exports the analytics with "Export"
-      // admin receives a workbook of the analytics of the last 7 days
+    test("An export of the last 7 days is a workbook", async ({ admin }) => {
+      await test.step('admin opens the console section "Analytics" and chooses the period "Last 7 days"', async () => {
+        await admin.flows.openConsoleSection("Analytics");
+        await admin.pages.analytics.choosePeriod("Last 7 days");
+      });
+      const download =
+        await test.step('admin exports the analytics with "Export"', () =>
+          admin.pages.analytics.exportWorkbook());
+      await test.step("admin receives a workbook of the analytics", () =>
+        admin.pages.analytics.expectWorkbook(download));
     });
   });
 });

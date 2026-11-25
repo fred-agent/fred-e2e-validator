@@ -39,11 +39,17 @@ test.describe("Home page sections", () => {
       });
     }
 
-    test.fixme('A member sees "Trending" for the period "30d" after another period', () => {
-      // member loads the home page and chooses the section "Trending"
-      // member chooses the period "7d"
-      // member chooses the period "30d"
-      // member sees the section "Trending" with the period "30d" chosen
+    test('A member sees "Trending" for the period "30d" after another period', async ({
+      member,
+    }) => {
+      await test.step('member loads the home page and chooses the section "Trending"', () =>
+        member.pages.home.openSection("Trending"));
+      await test.step('member chooses the period "7d"', () =>
+        member.pages.home.choosePeriod("7d"));
+      await test.step('member chooses the period "30d"', () =>
+        member.pages.home.choosePeriod("30d"));
+      await test.step('member sees the section "Trending" with the period "30d" chosen', () =>
+        member.pages.home.expectPeriod("Trending", "30d"));
     });
   });
 });

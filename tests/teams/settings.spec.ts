@@ -7,7 +7,7 @@
 // settings.
 import { test, type TemporaryTeam } from "../../e2e-framework/fixtures/test.ts";
 
-test.describe("Team settings", () => {
+test.describe("Team settings", { tag: "@team" }, () => {
   let team: TemporaryTeam;
 
   test.beforeEach(async ({ teams }) => {
@@ -99,41 +99,84 @@ test.describe("Team settings", () => {
   });
 
   test.describe("A platform admin edits a team from the console", () => {
-    test.fixme("A team renamed in the console is listed under its new name", () => {
-      // Planned: renaming the team saves its edit form in the technical console.
-      // admin opens the console section "Teams"
-      // admin renames the team in its edit form
-      // admin sees the team listed under its new name in the console
+    test("A team renamed in the console is listed under its new name", async ({
+      admin,
+      teams,
+    }) => {
+      const renamed =
+        await test.step('admin opens the console section "Teams" and renames the team in its edit form', () =>
+          teams.rename(team, "settings renamed"));
+      await test.step('admin opens the console section "Teams" again and sees the team under its new name and not under the old one', async () => {
+        await admin.flows.openConsoleSection("Teams");
+        await admin.pages.adminTeams.expectListedInstead(
+          renamed.name,
+          team.name,
+        );
+      });
     });
   });
 
   test.describe("The console's invitation links let people join the team", () => {
-    test.fixme("A user who follows one of the console's invitation links joins the team", () => {
-      // Planned: changes who may use the platform.
-      // admin creates an invitation link of the team in the console section "Teams"
-      // secondUser follows the invitation link
-      // secondUser loads the home page and sees the team among their spaces
-    });
+    test(
+      "A user who follows one of the console's invitation links joins the team",
+      { tag: "@extended" },
+      async ({ admin, secondUser }) => {
+        const link =
+          await test.step('admin opens the console section "Teams", turns on the link access of the team and creates an invitation link of the team', async () => {
+            await admin.flows.openConsoleSection("Teams");
+            await admin.pages.adminTeams.setLinkAccess(team.name, true);
+            return admin.pages.adminTeams.createInvitationLink(team.name);
+          });
+        await test.step("secondUser follows the invitation link and joins the team", () =>
+          secondUser.pages.join.followAndJoin(link));
+        await test.step("secondUser loads the home page and sees the team among their spaces", async () => {
+          await secondUser.pages.home.openWithSpaces();
+          await secondUser.pages.home.expectSpace(team.name);
+        });
+      },
+    );
   });
 
   test.describe("A revoked invitation link of the console no longer lets people join the team", () => {
-    test.fixme("A user who follows a revoked invitation link does not join the team", () => {
-      // Planned: changes who may use the platform.
-      // admin creates an invitation link of the team in the console section "Teams"
-      // admin revokes the invitation link
-      // secondUser follows the invitation link
-      // secondUser loads the home page and does not see the team among their spaces
-    });
+    test(
+      "A user who follows a revoked invitation link does not join the team",
+      { tag: "@extended" },
+      async ({ admin, secondUser }) => {
+        const link =
+          await test.step('admin opens the console section "Teams", turns on the link access of the team and creates an invitation link of the team', async () => {
+            await admin.flows.openConsoleSection("Teams");
+            await admin.pages.adminTeams.setLinkAccess(team.name, true);
+            return admin.pages.adminTeams.createInvitationLink(team.name);
+          });
+        await test.step("admin revokes the invitation link", () =>
+          admin.pages.adminTeams.revokeInvitationLink(team.name));
+        await test.step("secondUser follows the invitation link and is told that it is no longer valid", () =>
+          secondUser.pages.join.followAndExpectInvalid(link));
+        await test.step("secondUser loads the home page and does not see the team among their spaces", () =>
+          secondUser.pages.home.openAndExpectNoSpace(team.name));
+      },
+    );
   });
 
   test.describe("Turning a team's link access off suspends the console's invitation links", () => {
-    test.fixme("An invitation link of a team without link access no longer works", () => {
-      // Planned: changes who may use the platform.
-      // admin creates an invitation link of the team in the console section "Teams"
-      // admin turns the link access of the team off
-      // secondUser follows the invitation link
-      // secondUser loads the home page and does not see the team among their spaces
-    });
+    test(
+      "An invitation link of a team without link access no longer works",
+      { tag: "@extended" },
+      async ({ admin, secondUser }) => {
+        const link =
+          await test.step('admin opens the console section "Teams", turns on the link access of the team and creates an invitation link of the team', async () => {
+            await admin.flows.openConsoleSection("Teams");
+            await admin.pages.adminTeams.setLinkAccess(team.name, true);
+            return admin.pages.adminTeams.createInvitationLink(team.name);
+          });
+        await test.step("admin turns the link access of the team off", () =>
+          admin.pages.adminTeams.setLinkAccess(team.name, false));
+        await test.step("secondUser follows the invitation link and is told that it is no longer valid", () =>
+          secondUser.pages.join.followAndExpectInvalid(link));
+        await test.step("secondUser loads the home page and does not see the team among their spaces", () =>
+          secondUser.pages.home.openAndExpectNoSpace(team.name));
+      },
+    );
   });
 
   test.describe("A new team publishes agents by the platform default", () => {
@@ -151,25 +194,33 @@ test.describe("Team settings", () => {
   });
 
   test.describe("A team's description follows length rules", () => {
-    test.fixme("A description that is too long is refused", () => {
-      // admin opens the settings section "Settings" of the team
-      // admin writes a description of 501 characters
-      // admin sees that the description holds at most 500 characters
+    test("A description that is too long is refused", async ({ admin }) => {
+      await test.step('admin opens the settings section "Settings" of the team', () =>
+        admin.flows.openTeamSettings(team, "Settings"));
+      await test.step("admin writes a description of 501 characters", () =>
+        admin.pages.teamParameters.writeTooLongDescription());
+      await test.step("admin sees that the description holds at most 500 characters", () =>
+        admin.pages.teamParameters.expectDescriptionCut());
     });
   });
 
   test.describe("A team's retention stays under the platform cap", () => {
-    test.fixme("A value above the cap is refused", () => {
-      // admin opens the settings section "Settings" of the team
-      // admin sets a deletion grace period above the platform cap
-      // admin sees that the period exceeds the platform cap
+    test("A value above the cap is refused", async ({ admin }) => {
+      await test.step('admin opens the settings section "Settings" of the team', () =>
+        admin.flows.openTeamSettings(team, "Settings"));
+      await test.step("admin sets a deletion grace period above the platform cap and leaves the field", () =>
+        admin.pages.teamParameters.setGracePeriodAboveCap());
+      await test.step("admin sees that the period exceeds the platform cap", () =>
+        admin.pages.teamParameters.expectGracePeriodRefused());
     });
   });
 
   test.describe("A team keeps its default model", () => {
-    test.fixme("The default model cannot be turned off", () => {
-      // admin opens the settings section "Models" of the team
-      // admin sees no way to turn off the default model
+    test("The default model cannot be turned off", async ({ admin }) => {
+      await test.step('admin opens the settings section "Models" of the team', () =>
+        admin.flows.openTeamSettings(team, "Models"));
+      await test.step("admin sees the default model on and its switch disabled", () =>
+        admin.pages.teamModels.expectDefaultModelFixed());
     });
   });
 });

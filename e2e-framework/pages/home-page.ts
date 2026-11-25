@@ -1,8 +1,9 @@
 import { expect, type Locator, type Page } from "@playwright/test";
 import { AccountMenu, accountMenuButton } from "../components/account-menu.ts";
 import { MainNavigation } from "../components/main-navigation.ts";
+import { firstElement } from "../components/sign-in-actions.ts";
 import type { Account, AccountName } from "../config/accounts.ts";
-import { signInButton } from "./sign-in-page.ts";
+import { readSignInSteps } from "../config/sign-in-steps.ts";
 import { step } from "./step.ts";
 import { termsTitle } from "./terms-page.ts";
 import { FRED_START_TIMEOUT } from "./waits.ts";
@@ -16,8 +17,8 @@ export type SignInState = "signed in" | "sign-in form" | "terms";
  */
 export type HomeSection = "Quick access" | "Your activity" | "Trending";
 
-/** The greeting at the top of the home page. */
-export type HomeGreeting = "Hello";
+/** The greeting at the top of the home page, in English and in French. */
+export type HomeGreeting = "Hello" | "Bonjour";
 
 /** The sections that show the period selector. */
 export type PeriodSection = Exclude<HomeSection, "Quick access">;
@@ -32,8 +33,11 @@ const ACTIVITY_CAPTIONS: Readonly<Record<HomePeriod, string>> = {
   "90d": "over the last 90 days",
 };
 
-/** The home page's link to the signed-in user's personal space. */
-const PERSONAL_SPACE = "Personal space";
+/**
+ * The home page's link to the signed-in user's personal space, in English or
+ * in French, as a restoration can open the application in French.
+ */
+const PERSONAL_SPACE = /^(Personal space|Espace personnel)$/;
 
 /**
  * The link points to the user's own personal space once the bootstrap
@@ -72,12 +76,9 @@ export class HomePage {
     });
     this.greeting = page.getByRole("heading", { level: 1 });
     this.period = page.getByRole("radiogroup", { name: "Period", exact: true });
-    this.personalSpace = page.getByRole("link", {
-      name: PERSONAL_SPACE,
-      exact: true,
-    });
+    this.personalSpace = page.getByRole("link", { name: PERSONAL_SPACE });
     this.signedIn = accountMenuButton(page);
-    this.signInForm = signInButton(page);
+    this.signInForm = firstElement(page, readSignInSteps());
     this.terms = termsTitle(page);
     const main = page.getByRole("main");
     this.sectionContents = {
@@ -215,6 +216,16 @@ export class HomePage {
   async openWithSpaces(): Promise<void> {
     await this.page.goto("/");
     await this.expectShown();
+    await this.waitForBootstrap();
+  }
+
+  /**
+   * Waits on the open page until the "Personal space" link points to the
+   * user's own space, which follows the bootstrap response: the user's teams
+   * and profile picture.
+   */
+  @step
+  async waitForBootstrap(): Promise<void> {
     await expect(this.personalSpace).toHaveAttribute(
       "href",
       PERSONAL_SPACE_ADDRESS,

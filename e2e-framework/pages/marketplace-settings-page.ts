@@ -14,12 +14,17 @@ export class MarketplaceSettingsPage {
   private readonly page: Page;
   private readonly heading: Locator;
   private readonly publishing: Locator;
+  private readonly defaultMax: Locator;
 
   constructor(page: Page) {
     this.page = page;
     this.heading = pageHeading(page, "Marketplaces");
     this.publishing = page.getByRole("radiogroup", {
       name: "Publishing",
+      exact: true,
+    });
+    this.defaultMax = page.getByRole("spinbutton", {
+      name: "Default max agents",
       exact: true,
     });
   }
@@ -35,6 +40,33 @@ export class MarketplaceSettingsPage {
   async expectShown(): Promise<void> {
     await expect(this.heading).toBeVisible();
     await expect(this.publishing).toBeVisible();
+  }
+
+  /** Expects the platform's publishing choice and a default maximum of agents. */
+  @step
+  async expectPublishingChoice(): Promise<void> {
+    await expect(
+      this.publishing.getByRole("radio", { checked: true }),
+    ).toHaveCount(1);
+    await expect(this.defaultMax).toHaveValue(/^\d+$/);
+  }
+
+  /**
+   * Chooses a team's own publishing choice, for a team the test created;
+   * the page says that the settings were saved.
+   */
+  @step
+  async setTeamPublishing(
+    team: string,
+    choice: TeamPublishingChoice,
+  ): Promise<void> {
+    await this.teamPublishing(team, choice).click();
+    await expect(this.teamPublishing(team, choice)).toBeChecked();
+    await expect(
+      this.page
+        .getByRole("alert")
+        .filter({ hasText: "Marketplace settings saved." }),
+    ).toBeVisible();
   }
 
   /** Waits for the team's settings row and checks the selected choice. */

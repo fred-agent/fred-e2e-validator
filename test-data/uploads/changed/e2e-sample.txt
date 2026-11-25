@@ -1,0 +1,2 @@
+E2E sample document, changed.
+This file checks that an upload replaces a document.

@@ -8,6 +8,8 @@ import {
   AddDocumentsDialog,
   ConfirmDialog,
   NewFolderDialog,
+  type AllFilesDecision,
+  type FileDecision,
   type UploadMode,
 } from "../components/dialogs.ts";
 import { DocumentList } from "../components/document-list.ts";
@@ -17,7 +19,12 @@ import {
   type RowAction,
 } from "../components/resource-table.ts";
 import { SpaceNavigation } from "../components/space-navigation.ts";
-import type { UploadFile } from "../config/uploads.ts";
+import {
+  uploadPath,
+  uploadSize,
+  type UploadFile,
+  type UploadVersion,
+} from "../config/uploads.ts";
 import { expectButtonVisible, waitThenExpectButtonAbsent } from "./buttons.ts";
 import { step } from "./step.ts";
 
@@ -53,6 +60,8 @@ export class ResourcesPage {
   private readonly showImportsButton: Locator;
   private readonly hideImportsButton: Locator;
   private readonly importsPanel: Locator;
+  private readonly dropRefused: Locator;
+  private readonly filesSkipped: Locator;
   private readonly buttons: Readonly<Record<ResourcesButton, Locator>>;
   private readonly table: ResourceTable;
   private readonly documents: DocumentList;
@@ -109,6 +118,10 @@ export class ResourcesPage {
       name: "Imports",
       exact: true,
     });
+    this.dropRefused = page
+      .getByRole("alert")
+      .filter({ hasText: "Drop a folder" });
+    this.filesSkipped = page.getByText(/^\d+ files? (was|were) skipped: /);
     this.buttons = {
       "New folder": this.newFolder,
       "Add files": this.addFiles,
@@ -201,6 +214,40 @@ export class ResourcesPage {
     await this.table.expectListed(name);
   }
 
+  /**
+   * Opens "Statistics" and expects the files of the space by type: the chart
+   * of the files by type, and the sizes by type, whose legend lists a type
+   * once its query has counted a file of it, such as "Text".
+   */
+  @step
+  async showStatisticsAndExpectFileType(type: "Text"): Promise<void> {
+    const main = this.page.getByRole("main");
+    const toggle = main.getByRole("button", {
+      name: "Statistics",
+      exact: true,
+    });
+    await toggle.click();
+    await expect(toggle).toHaveAttribute("aria-expanded", "true");
+    await expect(
+      main.getByRole("heading", {
+        level: 2,
+        name: "Files by type",
+        exact: true,
+      }),
+    ).toBeVisible();
+    // The section of a chart holds its heading and its legend.
+    const sizes = main.locator("section").filter({
+      has: this.page.getByRole("heading", {
+        level: 2,
+        name: "Size by type",
+        exact: true,
+      }),
+    });
+    await expect(
+      sizes.getByRole("listitem").filter({ hasText: new RegExp(`^${type}$`) }),
+    ).toBeVisible();
+  }
+
   /** Open the imports panel to track files being processed. */
   @step
   async showImports(): Promise<void> {
@@ -233,6 +280,88 @@ export class ResourcesPage {
     await this.addFiles.click();
     await this.addDocumentsDialog.submit(file, mode, UPLOAD_TIMEOUT);
     await this.table.expectListed(file, UPLOAD_TIMEOUT);
+  }
+
+  /**
+   * Adds the changed version of files that the open folder lists, without
+   * processing, with a decision for the one file or for all of them. The
+   * transfer goes on behind the closed dialog: a replaced file then shows its
+   * new size, and a message names the files that were skipped.
+   */
+  @step
+  async uploadChanged(
+    files: readonly UploadFile[],
+    decision: FileDecision | AllFilesDecision,
+  ): Promise<void> {
+    await this.addFiles.click();
+    await this.addDocumentsDialog.submitChanged(
+      files,
+      "Upload only",
+      decision,
+      UPLOAD_TIMEOUT,
+    );
+    if (decision === "Replace" || decision === "Replace all")
+      for (const file of files)
+        await this.table.expectSize(
+          file,
+          uploadSize(file, "changed"),
+          UPLOAD_TIMEOUT,
+        );
+    else await expect(this.filesSkipped).toBeVisible();
+  }
+
+  /** Expects the open folder to list exactly these files, each in a version. */
+  @step
+  async expectOnlyVersion(
+    files: readonly UploadFile[],
+    version: UploadVersion,
+  ): Promise<void> {
+    await this.table.expectExactly(files);
+    for (const file of files)
+      await this.table.expectSize(file, uploadSize(file, version));
+  }
+
+  /** Drops a file on the top level of the open space, beside its folders. */
+  @step
+  async dropAtTopLevel(file: UploadFile): Promise<void> {
+    await this.breadcrumb.drop({ files: uploadPath(file) });
+  }
+
+  /** Expects the message "Drop a folder" and the file not listed. */
+  @step
+  async expectDropRefused(file: UploadFile): Promise<void> {
+    await expect(this.dropRefused).toBeVisible();
+    await this.table.expectNotListed(file);
+  }
+
+  /** Leaves a document out of search; its row then shows the mark. */
+  @step
+  async excludeFromSearch(name: string): Promise<void> {
+    await this.table.choose(name, "Exclude from search");
+    await this.table.expectExcludedFromSearch(name);
+  }
+
+  /** Includes a document in search again; its row then shows no mark. */
+  @step
+  async includeInSearch(name: string): Promise<void> {
+    await this.table.choose(name, "Include in search");
+    await this.table.expectIncludedInSearch(name);
+  }
+
+  /** Expects a document's row to say that the document was uploaded. */
+  @step
+  async expectMarkedUploaded(name: string): Promise<void> {
+    await this.table.expectMarkedUploaded(name);
+  }
+
+  @step
+  async expectExcludedFromSearch(name: string): Promise<void> {
+    await this.table.expectExcludedFromSearch(name);
+  }
+
+  @step
+  async expectIncludedInSearch(name: string): Promise<void> {
+    await this.table.expectIncludedInSearch(name);
   }
 
   /**

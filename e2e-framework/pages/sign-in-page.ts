@@ -1,39 +1,48 @@
 import { expect, type Locator, type Page } from "@playwright/test";
+import {
+  firstElement,
+  lastElement,
+  SignInActions,
+} from "../components/sign-in-actions.ts";
 import type { Account } from "../config/accounts.ts";
-import { SIGN_IN_FAILED } from "../reporting/run-log.ts";
+import { readSignInSteps, type SignInSteps } from "../config/sign-in-steps.ts";
+import { SIGN_IN_FAILED, SIGN_IN_NOT_SHOWN } from "../reporting/run-log.ts";
 import { step } from "./step.ts";
 import { FRED_START_TIMEOUT } from "./waits.ts";
 
-/** The submit button appears once the sign-in form has loaded. */
-export function signInButton(page: Page): Locator {
-  return page.getByRole("button", { name: "Sign In", exact: true });
-}
-
+/** The environment's sign-in pages, as `sign-in.json` describes them. */
 export class SignInPage {
   static readonly displayName = "Sign-in page";
   private readonly page: Page;
-  private readonly username: Locator;
-  private readonly password: Locator;
-  private readonly submit: Locator;
+  private readonly steps: SignInSteps;
+  private readonly actions: SignInActions;
+  private readonly first: Locator;
+  private readonly last: Locator;
 
   constructor(page: Page) {
+    const steps = readSignInSteps();
     this.page = page;
-    this.username = page.getByLabel("Username or email");
-    this.password = page.getByLabel("Password", { exact: true });
-    this.submit = signInButton(page);
+    this.steps = steps;
+    this.actions = new SignInActions(page);
+    this.first = firstElement(page, steps);
+    this.last = lastElement(page, steps);
   }
 
-  /** The initial redirect to the sign-in form can take longer during startup. */
+  /** The initial redirect to the sign-in pages can take longer during startup. */
   @step
   async expectShown(): Promise<void> {
-    await expect(this.submit).toBeVisible({ timeout: FRED_START_TIMEOUT });
+    await expect(this.first, SIGN_IN_NOT_SHOWN).toBeVisible({
+      timeout: FRED_START_TIMEOUT,
+    });
   }
 
   @step
   async signIn(account: Account): Promise<void> {
-    await this.username.fill(account.username);
-    await this.password.fill(account.password);
-    await this.submit.click();
-    await expect(this.submit, SIGN_IN_FAILED).toBeHidden();
+    const { actions } = this;
+    for (const signInStep of this.steps) {
+      if ("click" in signInStep) await actions.click(signInStep.click);
+      else await actions.fill(signInStep.fill, signInStep.with, account);
+    }
+    await expect(this.last, SIGN_IN_FAILED).toBeHidden();
   }
 }

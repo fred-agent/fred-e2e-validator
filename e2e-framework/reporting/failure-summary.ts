@@ -6,6 +6,7 @@ import {
   NO_FOLDER_LISTED,
   REMOVAL_FAILED,
   SIGN_IN_FAILED,
+  SIGN_IN_NOT_SHOWN,
 } from "./run-log.ts";
 
 const seconds = (ms: number) => `${Math.round(ms / 1000)} s`;
@@ -161,8 +162,15 @@ const explainStep = (message: string) =>
 
 const TEST_TIMEOUT = /Test timeout of \d+ms exceeded/;
 
+/** A problem of `sign-in.json`, whose text holds no value of the file. */
+const SIGN_IN_FILE_PROBLEM = /^sign-in\.json: .+/;
+
+const STRICT_MODE = /Error: strict mode violation: /;
+const SEVERAL_ELEMENTS = "Several elements match where one was expected.";
+
 /** The messages of the support code a report shows as they are. */
 const FIXED_MESSAGES = [
+  SIGN_IN_NOT_SHOWN,
   SIGN_IN_FAILED,
   FRED_NOT_SHOWN,
   NO_FOLDER_LISTED,
@@ -173,10 +181,11 @@ const FIXED_MESSAGES = [
  * Why a test failed, in one sentence, from its errors in the order the runner
  * reports them and whether the test itself raised one before its teardown.
  * When it did, its own error is the first of them, and the cause explains
- * it: a message the support code gives as it is, else what an action or an
- * assertion could not do, else another Playwright failure, else a generic
- * description. A timed-out test reports its time-out first
- * and the pending action's error right after it, which then explains it.
+ * it: a message the support code gives as it is, else that a locator matches
+ * several elements, else what an action or an assertion could not do, else
+ * another Playwright failure, else a generic description. A timed-out test
+ * reports its time-out first and the pending action's error right after it,
+ * which then explains it.
  * The errors after the first are never the cause. When the test itself
  * raised none, the removals' error is the cause, ahead of an error a removal
  * raised after its limit, which comes before it.
@@ -206,6 +215,8 @@ export function failureCause(
   }
   return (
     FIXED_MESSAGES.find((message) => first.includes(message)) ??
+    SIGN_IN_FILE_PROBLEM.exec(withoutType(first))?.[0] ??
+    (STRICT_MODE.test(first) ? SEVERAL_ELEMENTS : undefined) ??
     explainStep(first) ??
     summarizeFailure(first) ??
     "The operation failed."

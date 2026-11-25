@@ -9,7 +9,7 @@
 // from the agent form.
 import { test, type TemporaryTeam } from "../../e2e-framework/fixtures/test.ts";
 
-test.describe("Capabilities of a team", { tag: "@ppt" }, () => {
+test.describe("Capabilities of a team", { tag: ["@ppt", "@team"] }, () => {
   let team: TemporaryTeam;
 
   test.beforeEach(async ({ teams, testData }) => {
@@ -134,44 +134,51 @@ test.describe("Capabilities of a team", { tag: "@ppt" }, () => {
     });
   });
 
-  test.describe("A reader does not see a suspended agent", () => {
-    test("A reader sees the available agent only", async ({
-      admin,
-      secondUser,
-      agents,
-    }) => {
-      const presenter =
-        await test.step('admin creates an agent in the team and turns on "Generate a presentation" for it', async () => {
-          const created = await agents.create(admin, team, "presenter");
-          await admin.pages.agents.turnOn(
-            created.name,
+  test.describe(
+    "A reader does not see a suspended agent",
+    { tag: "@extended" },
+    () => {
+      test("A reader sees the available agent only", async ({
+        admin,
+        secondUser,
+        agents,
+      }) => {
+        const presenter =
+          await test.step('admin creates an agent in the team and turns on "Generate a presentation" for it', async () => {
+            const created = await agents.create(admin, team, "presenter");
+            await admin.pages.agents.turnOn(
+              created.name,
+              "Generate a presentation",
+            );
+            return created;
+          });
+        const control =
+          await test.step("admin creates a second agent in the team", () =>
+            agents.create(admin, team, "control"));
+        await test.step('admin disables "Generate a presentation" for the team in the console section "Features"', async () => {
+          await admin.flows.openConsoleSection("Features");
+          await admin.pages.features.setCapabilityAccess(
             "Generate a presentation",
+            team.name,
+            "Disable",
           );
-          return created;
         });
-      const control =
-        await test.step("admin creates a second agent in the team", () =>
-          agents.create(admin, team, "control"));
-      await test.step('admin disables "Generate a presentation" for the team in the console section "Features"', async () => {
-        await admin.flows.openConsoleSection("Features");
-        await admin.pages.features.setCapabilityAccess(
-          "Generate a presentation",
-          team.name,
-          "Disable",
-        );
+        await test.step("admin opens the members of the team and adds secondUser", async () => {
+          await admin.flows.openTeamMembers(team);
+          await admin.pages.teamMembers.addMember(
+            secondUser.account,
+            team.name,
+          );
+        });
+        await test.step("secondUser opens the agents of the team", () =>
+          secondUser.flows.openAgents(team));
+        await test.step("secondUser reloads the agents and sees the second agent", () =>
+          secondUser.pages.agents.reloadAndExpectListed(control.name));
+        await test.step("secondUser reloads the agents and does not see the first agent", () =>
+          secondUser.pages.agents.reloadAndExpectNotListed(presenter.name));
       });
-      await test.step("admin opens the members of the team and adds secondUser", async () => {
-        await admin.flows.openTeamMembers(team);
-        await admin.pages.teamMembers.addMember(secondUser.account, team.name);
-      });
-      await test.step("secondUser opens the agents of the team", () =>
-        secondUser.flows.openAgents(team));
-      await test.step("secondUser reloads the agents and sees the second agent", () =>
-        secondUser.pages.agents.reloadAndExpectListed(control.name));
-      await test.step("secondUser reloads the agents and does not see the first agent", () =>
-        secondUser.pages.agents.reloadAndExpectNotListed(presenter.name));
-    });
-  });
+    },
+  );
 
   test.describe("A platform admin opens a feature team by team", () => {
     test("The agent form of another team still shows a capability disabled for one team", async ({
@@ -203,7 +210,7 @@ test.describe("Capabilities of a team", { tag: "@ppt" }, () => {
     });
 
     test.fixme("The agent form of a team without a setting of its own does not show a capability enabled for one team", () => {
-      // Planned: changes a setting for every team.
+      // Planned: changes a choice for every team or every user, which no fixture puts back.
       // admin creates a second team in which admin can create agents
       // admin turns "Enabled for all" off for the capability "Generate a presentation" in the console section "Features"
       // admin opens the capabilities of a new agent of the second team and does not see "Generate a presentation"
@@ -246,10 +253,22 @@ test.describe("Capabilities of a team", { tag: "@ppt" }, () => {
   });
 
   test.describe("The agent form has advanced capabilities", () => {
-    test.fixme('The "Advanced" switch shows more capabilities', () => {
-      // admin opens the agents of the team and the capabilities of a new agent
-      // admin turns on "Advanced capabilities view"
-      // admin sees the capability "Search documents by label"
+    test('The "Advanced" switch shows more capabilities', async ({
+      admin,
+      testData,
+    }) => {
+      await test.step('admin opens the agents of the team, reloads them and opens "Capabilities" in the form of a new agent from the template of the test data', async () => {
+        await admin.flows.openAgents(team);
+        await admin.pages.agents.reloadAndOpenNewAgentCapabilities(
+          testData.agentTemplate,
+        );
+      });
+      await test.step('admin turns on "Advanced capabilities view"', () =>
+        admin.pages.agents.showAdvancedCapabilities());
+      await test.step('admin sees the capability "Search documents by label"', () =>
+        admin.pages.agents.expectAdvancedCapabilityListed(
+          "Search documents by label",
+        ));
     });
   });
 });

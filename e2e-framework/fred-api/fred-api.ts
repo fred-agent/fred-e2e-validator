@@ -1,6 +1,6 @@
-// Team teardown uses the signed-in page's request context. The home page's
-// bootstrap response identifies the user's teams and the control plane. The
-// delete request reuses the bearer token from the bootstrap request.
+// The creation response supplies the team ID used for teardown.
+// Before deletion, the adapter checks that the home page's bootstrap response
+// lists that ID and reuses the bearer token from the bootstrap request.
 import type { Page, Response } from "@playwright/test";
 import { step } from "../pages/step.ts";
 import { FRED_START_TIMEOUT } from "../pages/waits.ts";
@@ -11,10 +11,8 @@ const BOOTSTRAP_PATH = "/frontend/bootstrap";
 /** How messages name the bootstrap, by the request that fetches it. */
 const BOOTSTRAP = "Fred's bootstrap (GET /control-plane/v1/frontend/bootstrap)";
 
-export type DeleteTeamOptions = Readonly<{
-  /** A confirmed team must appear in the list before deletion. */
-  expected: boolean;
-}>;
+/** Step titles omit the contents of this object. */
+export type TeamId = Readonly<{ id: string }>;
 
 /** A JSON object's fields, or undefined for any other value. */
 function fieldsOf(value: unknown): Record<string, unknown> | undefined {
@@ -23,27 +21,14 @@ function fieldsOf(value: unknown): Record<string, unknown> | undefined {
     : undefined;
 }
 
-/**
- * The id of the signed-in user's team of this exact name in a bootstrap, its
- * `available_teams`, or undefined when the team list holds none. Two teams of
- * the name, or a team without an id, are errors.
- */
-function userTeamId(bootstrap: unknown, name: string): string | undefined {
+/** The signed-in user's teams in a bootstrap, its `available_teams`. */
+function userTeams(
+  bootstrap: unknown,
+): (Record<string, unknown> | undefined)[] {
   const teams = fieldsOf(bootstrap)?.available_teams;
   if (!Array.isArray(teams))
     throw new Error(`${BOOTSTRAP} holds no list "available_teams".`);
-  const named = teams
-    .map((team: unknown) => fieldsOf(team))
-    .filter((team) => team?.name === name);
-  if (named.length > 1)
-    throw new Error(
-      `The signed-in user's team list holds ${named.length} teams named "${name}".`,
-    );
-  if (named.length === 0) return undefined;
-  const id = named[0]?.id;
-  if (typeof id !== "string" || id === "")
-    throw new Error(`The team "${name}" has no id in the team list.`);
-  return id;
+  return teams.map((team: unknown) => fieldsOf(team));
 }
 
 function isBootstrap(response: Response): boolean {
@@ -61,25 +46,63 @@ export class FredApi {
     this.page = page;
   }
 
-  /**
-   * Deletes the team whose name exactly matches an entry in the signed-in
-   * user's team list. An absent team is an error if creation was confirmed.
-   */
+  /** Records the ID from the form's creation response before its UI checks can fail. */
   @step
-  async deleteTeam(
+  async recordTeamCreation(
     name: string,
-    { expected }: DeleteTeamOptions,
+    create: () => Promise<void>,
+    record: (team: TeamId) => void,
   ): Promise<void> {
-    const { response, bootstrap } = await this.loadBootstrap();
-    const id = userTeamId(bootstrap, name);
-    if (id === undefined) {
-      if (expected)
-        throw new Error(
-          `The team "${name}" is not in the signed-in user's team list, so it was not deleted.`,
-        );
-      return;
+    const controller = new AbortController();
+    const capture = this.page
+      .waitForResponse(
+        (response) =>
+          response.request().method() === "POST" &&
+          new URL(response.url()).pathname.endsWith(
+            "/control-plane/v1/teams",
+          ) &&
+          fieldsOf(response.request().postDataJSON())?.name === name,
+        { signal: controller.signal, timeout: 0 },
+      )
+      .then(async (response) => {
+        if (response.status() !== 201) return false;
+        const team = fieldsOf(await response.json());
+        if (
+          team?.name !== name ||
+          typeof team.id !== "string" ||
+          !team.id.trim()
+        )
+          return false;
+        record(Object.freeze({ id: team.id }));
+        return true;
+      })
+      .catch(() => false);
+    let recorded: boolean;
+    try {
+      await create();
+    } finally {
+      // Stop listening when the form finishes and let any received body finish reading.
+      controller.abort();
+      recorded = await capture;
     }
-    const authorization = await response.request().headerValue("authorization");
+    if (!recorded)
+      throw new Error(
+        "The creation response did not confirm the new team's ID.",
+      );
+  }
+
+  /** Deletes the recorded team if the signed-in account still lists its ID. */
+  @step
+  async deleteTeam(team: TeamId, name: string): Promise<void> {
+    const { response, bootstrap } = await this.loadBootstrap();
+    if (!userTeams(bootstrap).some((entry) => entry?.id === team.id))
+      throw new Error(
+        `The team "${name}" is not in the signed-in user's team list, so it was not deleted.`,
+      );
+    const authorization = await response
+      .request()
+      .headerValue("authorization")
+      .catch(() => null);
     if (!authorization?.startsWith("Bearer "))
       throw new Error(`${BOOTSTRAP} was sent without a bearer token.`);
     const url = new URL(response.url());
@@ -88,7 +111,7 @@ export class FredApi {
     // error: the message of either would list the request's headers, and with
     // them the token and the cookies.
     const deleted = await this.page.request
-      .delete(`${base}/teams/${encodeURIComponent(id)}`, {
+      .delete(`${base}/teams/${encodeURIComponent(team.id)}`, {
         headers: { authorization },
       })
       .catch(() => {
@@ -98,7 +121,7 @@ export class FredApi {
       });
     if (!deleted.ok())
       throw new Error(
-        `Fred did not delete the team "${name}": ${deleted.status()} ${deleted.statusText()}.`,
+        `Fred did not delete the team "${name}" (HTTP ${deleted.status()}).`,
       );
   }
 
@@ -110,15 +133,23 @@ export class FredApi {
   private async loadBootstrap(): Promise<
     Readonly<{ response: Response; bootstrap: unknown }>
   > {
-    await this.page.goto("/", { waitUntil: "commit" });
-    const response = await this.page.waitForResponse(isBootstrap, {
-      timeout: FRED_START_TIMEOUT,
+    await this.page.goto("/", { waitUntil: "commit" }).catch(() => {
+      throw new Error("The home page could not be opened for team removal.");
     });
+    const response = await this.page
+      .waitForResponse(isBootstrap, {
+        timeout: FRED_START_TIMEOUT,
+      })
+      .catch(() => {
+        throw new Error(
+          "The team list response was not available for removal.",
+        );
+      });
     if (!response.ok())
-      throw new Error(
-        `${BOOTSTRAP} did not load: ${response.status()} ${response.statusText()}.`,
-      );
-    const bootstrap: unknown = await response.json();
+      throw new Error(`${BOOTSTRAP} did not load (HTTP ${response.status()}).`);
+    const bootstrap: unknown = await response.json().catch(() => {
+      throw new Error("The team list response could not be read for removal.");
+    });
     return { response, bootstrap };
   }
 }

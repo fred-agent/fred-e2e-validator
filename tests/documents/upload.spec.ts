@@ -44,47 +44,101 @@ test.describe("Uploading documents", () => {
   });
 
   test.describe("A file name that exists asks what to do", () => {
-    test.fixme("Replace keeps the new file", () => {
-      // member uploads "e2e-sample.txt" into the folder without processing
-      // member uploads "e2e-sample.txt" into the folder again
-      // member chooses "Replace" for "e2e-sample.txt"
-      // member sees only the new "e2e-sample.txt" in the folder
+    test("Replace keeps the new file", async ({ member }) => {
+      await test.step('member uploads "e2e-sample.txt" into the folder without processing', async () => {
+        await member.flows.openFolder(folder);
+        await member.pages.resources.upload("e2e-sample.txt", "Upload only");
+      });
+      await test.step('member uploads a changed "e2e-sample.txt" into the folder and chooses "Replace" for "e2e-sample.txt"', () =>
+        member.pages.resources.uploadChanged(["e2e-sample.txt"], "Replace"));
+      await test.step('member opens the folder again and sees only the new "e2e-sample.txt"', async () => {
+        await member.flows.openFolder(folder);
+        await member.pages.resources.expectOnlyVersion(
+          ["e2e-sample.txt"],
+          "changed",
+        );
+      });
     });
 
-    test.fixme("Skip keeps the old file", () => {
-      // member uploads "e2e-sample.txt" into the folder without processing
-      // member uploads "e2e-sample.txt" into the folder again
-      // member chooses "Skip" for "e2e-sample.txt"
-      // member sees only the old "e2e-sample.txt" in the folder
+    test("Skip keeps the old file", async ({ member }) => {
+      await test.step('member uploads "e2e-sample.txt" into the folder without processing', async () => {
+        await member.flows.openFolder(folder);
+        await member.pages.resources.upload("e2e-sample.txt", "Upload only");
+      });
+      await test.step('member uploads a changed "e2e-sample.txt" into the folder and chooses "Skip" for "e2e-sample.txt"', () =>
+        member.pages.resources.uploadChanged(["e2e-sample.txt"], "Skip"));
+      await test.step('member opens the folder again and sees only the old "e2e-sample.txt"', async () => {
+        await member.flows.openFolder(folder);
+        await member.pages.resources.expectOnlyVersion(
+          ["e2e-sample.txt"],
+          "original",
+        );
+      });
     });
 
-    test.fixme("Replace all keeps every new file", () => {
-      // member uploads "e2e-sample.txt" and "e2e-table.csv" into the folder without processing
-      // member uploads "e2e-sample.txt" and "e2e-table.csv" into the folder again
-      // member chooses "Replace all" for the files of the upload
-      // member sees only the new "e2e-sample.txt" and "e2e-table.csv" in the folder
+    test("Replace all keeps every new file", async ({ member }) => {
+      await test.step('member uploads "e2e-sample.txt" and "e2e-table.csv" into the folder without processing', async () => {
+        await member.flows.openFolder(folder);
+        await member.pages.resources.upload("e2e-sample.txt", "Upload only");
+        await member.pages.resources.upload("e2e-table.csv", "Upload only");
+      });
+      await test.step('member uploads changed "e2e-sample.txt" and "e2e-table.csv" into the folder and chooses "Replace all" for the files of the upload', () =>
+        member.pages.resources.uploadChanged(
+          ["e2e-sample.txt", "e2e-table.csv"],
+          "Replace all",
+        ));
+      await test.step('member opens the folder again and sees only the new "e2e-sample.txt" and "e2e-table.csv"', async () => {
+        await member.flows.openFolder(folder);
+        await member.pages.resources.expectOnlyVersion(
+          ["e2e-sample.txt", "e2e-table.csv"],
+          "changed",
+        );
+      });
     });
 
-    test.fixme("Skip all keeps every old file", () => {
-      // member uploads "e2e-sample.txt" and "e2e-table.csv" into the folder without processing
-      // member uploads "e2e-sample.txt" and "e2e-table.csv" into the folder again
-      // member chooses "Skip all" for the files of the upload
-      // member sees only the old "e2e-sample.txt" and "e2e-table.csv" in the folder
+    test("Skip all keeps every old file", async ({ member }) => {
+      await test.step('member uploads "e2e-sample.txt" and "e2e-table.csv" into the folder without processing', async () => {
+        await member.flows.openFolder(folder);
+        await member.pages.resources.upload("e2e-sample.txt", "Upload only");
+        await member.pages.resources.upload("e2e-table.csv", "Upload only");
+      });
+      await test.step('member uploads changed "e2e-sample.txt" and "e2e-table.csv" into the folder and chooses "Skip all" for the files of the upload', () =>
+        member.pages.resources.uploadChanged(
+          ["e2e-sample.txt", "e2e-table.csv"],
+          "Skip all",
+        ));
+      await test.step('member opens the folder again and sees only the old "e2e-sample.txt" and "e2e-table.csv"', async () => {
+        await member.flows.openFolder(folder);
+        await member.pages.resources.expectOnlyVersion(
+          ["e2e-sample.txt", "e2e-table.csv"],
+          "original",
+        );
+      });
     });
   });
 
   test.describe("Files are uploaded into a folder", () => {
-    test.fixme("A file dropped outside a folder is refused", () => {
-      // member opens the resources of the test space
-      // member drops "e2e-sample.txt" on the top level of the space
-      // member sees the message "Drop a folder"
+    test("A file dropped outside a folder is refused", async ({
+      member,
+      testData,
+    }) => {
+      await test.step("member opens the resources of the test space", () =>
+        member.flows.openResources(testData.space));
+      await test.step('member drops "e2e-sample.txt" on the top level of the space', () =>
+        member.pages.resources.dropAtTopLevel("e2e-sample.txt"));
+      await test.step('member sees the message "Drop a folder" and does not see "e2e-sample.txt"', () =>
+        member.pages.resources.expectDropRefused("e2e-sample.txt"));
     });
   });
 
   test.describe("A new file is marked as uploaded", () => {
-    test.fixme('A new file is marked "Uploaded"', () => {
-      // member uploads "e2e-sample.txt" into the folder without processing
-      // member sees "e2e-sample.txt" marked "Uploaded" in the folder
+    test('A new file is marked "Uploaded"', async ({ member }) => {
+      await test.step('member uploads "e2e-sample.txt" into the folder without processing', async () => {
+        await member.flows.openFolder(folder);
+        await member.pages.resources.upload("e2e-sample.txt", "Upload only");
+      });
+      await test.step('member sees "e2e-sample.txt" marked "Uploaded" in the folder', () =>
+        member.pages.resources.expectMarkedUploaded("e2e-sample.txt"));
     });
   });
 });

@@ -1,8 +1,9 @@
 {{- /*
 The service serves the run page and team routes and starts Playwright as a
 child process. The gateway reaches the Service by its release name in the
-release namespace. The release mounts its test configuration from a
-ConfigMap. Restart the StatefulSet to apply a ConfigMap-only change.
+release namespace. The release mounts its test configuration, and its sign-in
+steps when it sets them, from ConfigMaps. Restart the StatefulSet to apply a
+ConfigMap-only change.
 */ -}}
 {{- $name := .Release.Name | trunc 63 | trimSuffix "-" -}}
 {{- $secret := required "accounts.existingSecret is required: the Secret with the synthetic accounts" .Values.accounts.existingSecret -}}
@@ -57,6 +58,18 @@ data:
   env-config.json: |
     {{- $envConfig | toPrettyJson | nindent 4 }}
 ---
+{{- if not (kindIs "invalid" .Values.signIn) }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ $name }}-sign-in
+  labels:
+    {{- toYaml $selector | nindent 4 }}
+data:
+  sign-in.json: |
+    {{- .Values.signIn | toPrettyJson | nindent 4 }}
+---
+{{- end }}
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
@@ -146,6 +159,13 @@ spec:
               mountPath: /app/env-config.json
               subPath: env-config.json
               readOnly: true
+            {{- if not (kindIs "invalid" .Values.signIn) }}
+            # The release's sign-in.json over the image's.
+            - name: sign-in
+              mountPath: /app/sign-in.json
+              subPath: sign-in.json
+              readOnly: true
+            {{- end }}
             # Chromium needs more shared memory than a container's default.
             - { name: shm, mountPath: /dev/shm }
       volumes:
@@ -155,6 +175,11 @@ spec:
         - name: env-config
           configMap:
             name: {{ $name }}-env-config
+        {{- if not (kindIs "invalid" .Values.signIn) }}
+        - name: sign-in
+          configMap:
+            name: {{ $name }}-sign-in
+        {{- end }}
         - name: shm
           emptyDir: { medium: Memory, sizeLimit: 1Gi }
 ---
