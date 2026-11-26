@@ -309,6 +309,12 @@ Playwright's documentation covers
 | `report`   | Opens the HTML report with `npx playwright show-report`          |
 | `help`     | Lists every target                                               |
 
+## Run with Podman
+
+[`deploy/podman/README.md`](deploy/podman/README.md) runs the published
+image once from the host of a Fred under `podman compose`: the test
+accounts, the files to mount, the command and the reports.
+
 ## Run from Fred
 
 The same tests also run inside a Fred test environment, from the
