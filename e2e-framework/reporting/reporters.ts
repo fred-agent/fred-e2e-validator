@@ -7,7 +7,17 @@ export const RUN_LOG_REPORTER = join(
   "run-log-reporter.ts",
 );
 
-const REPORTERS_AFTER_FILTER = new Set(["list", "html", RUN_LOG_REPORTER]);
+export const ZEPHYR_CSV_REPORTER = join(import.meta.dirname, "zephyr-csv.ts");
+
+// The Zephyr files read each test's result once it has ended and the step
+// filter has redacted it, as the HTML report does.
+const REPORTERS_AFTER_FILTER = new Set([
+  "list",
+  "html",
+  RUN_LOG_REPORTER,
+  ZEPHYR_CSV_REPORTER,
+  "junit",
+]);
 
 /** Live event reporters can retain browser operations before a test ends. */
 export function checkRunReporters(

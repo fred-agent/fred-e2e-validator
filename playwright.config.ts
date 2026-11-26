@@ -1,5 +1,6 @@
 // Loading the configuration is sufficient for test discovery. Global setup
 // checks the accounts before a run.
+import { join } from "node:path";
 import {
   defineConfig,
   devices,
@@ -15,7 +16,12 @@ import type { RunLogOptions } from "./e2e-framework/reporting/run-log-reporter.t
 import {
   RUN_LOG_REPORTER,
   STEP_REPORTER,
+  ZEPHYR_CSV_REPORTER,
 } from "./e2e-framework/reporting/reporters.ts";
+import {
+  zephyrReportDir,
+  type ZephyrCsvOptions,
+} from "./e2e-framework/reporting/zephyr-csv.ts";
 
 loadDotEnv();
 const envConfig = readEnvConfig();
@@ -37,6 +43,8 @@ function anyTag(tags: readonly string[]): RegExp | undefined {
 }
 const grepInvert = anyTag(envConfig.excludeTags);
 
+const zephyrDir = zephyrReportDir(import.meta.dirname);
+
 const html: ReporterDescription = [
   "html",
   { open: "never", noSnippets: true, noCopyPrompt: true },
@@ -52,7 +60,24 @@ const reporter: ReporterDescription[] = progressFile
       ],
       html,
     ]
-  : [["list"], html];
+  : [
+      ["list"],
+      html,
+      // The files for Zephyr (Jira): the CSV and the JUnit XML of the run.
+      [
+        ZEPHYR_CSV_REPORTER,
+        {
+          outputFile: join(zephyrDir, "zephyr-tests.csv"),
+        } satisfies ZephyrCsvOptions,
+      ],
+      [
+        "junit",
+        {
+          outputFile: join(zephyrDir, "junit.xml"),
+          stripANSIControlSequences: true,
+        },
+      ],
+    ];
 
 export default defineConfig({
   testDir: "tests",

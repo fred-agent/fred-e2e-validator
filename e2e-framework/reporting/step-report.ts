@@ -59,7 +59,8 @@ function failureTimeline(steps: readonly TestStep[], start: number): object[] {
   }));
 }
 
-function privateAccountFields(): string[] {
+/** The account fields a report hides, longest first: every variable name, password and email other than a user name. */
+export function privateAccountFields(): string[] {
   const fields = Object.entries(process.env).filter(([key]) =>
     isAccountVariable(key),
   );

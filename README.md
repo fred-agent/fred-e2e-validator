@@ -258,6 +258,18 @@ Each failed test includes a JSON timeline of its steps, their start offsets,
 durations and outcomes.
 The report and run log may show synthetic usernames. Account passwords are excluded.
 Normal runs keep browser traces, screenshots and video recording off.
+
+A run from the command line also writes the files for Zephyr (Jira) to
+`zephyr-report/`, or to the folder `ZEPHYR_REPORT_DIR` names:
+
+- `zephyr-tests.csv`: one row per step of the test file, the test's
+  columns repeated on each row (`Name`, `Description`, `Folder`, `Labels`,
+  `Test Status`, `Executed On`, `Duration (s)`, `Environment`, `Comment`),
+  then `Step` and `Step Result`. UTF-8 with a byte order mark, comma
+  separated. Import it grouping rows by a change of `Name`.
+- `junit.xml`: Playwright's JUnit report, for importing the results.
+
+Both hide the account fields as the HTML report does.
 Keep generated reports, including `docker-out/`, out of Git and issue
 attachments. Raw diagnostic captures such as browser traces can contain
 credentials, session cookies and page contents.
