@@ -2,11 +2,13 @@ import type { Locator, Page } from "@playwright/test";
 import type { Account } from "../config/accounts.ts";
 import {
   lastStep,
+  type AccountChoice,
   type AccountValue,
   type SignInStep,
   type SignInSteps,
 } from "../config/sign-in-steps.ts";
 import { step } from "../pages/step.ts";
+import { literal } from "./text-patterns.ts";
 
 /** The one visible button, link or field of a step, by the whole text the page shows. */
 function elementOf(page: Page, signInStep: SignInStep): Locator {
@@ -34,7 +36,7 @@ export function lastElement(page: Page, steps: SignInSteps): Locator {
   return elementOf(page, lastStep(steps));
 }
 
-/** The actions of the sign-in pages. */
+/** The actions of the sign-in pages, and of the pages that end a sign-out. */
 export class SignInActions {
   static readonly displayName = "Sign-in actions";
   private readonly page: Page;
@@ -57,5 +59,17 @@ export class SignInActions {
     await elementOf(this.page, { fill: text, with: value }).fill(
       account[value],
     );
+  }
+
+  /**
+   * Clicks the account's user name or email where the page shows it alone,
+   * as on a tile of an account picker, whatever its capitals.
+   */
+  @step
+  async choose(value: AccountChoice, account: Account): Promise<void> {
+    await this.page
+      .getByText(new RegExp(`^${literal(account[value])}$`, "i"))
+      .filter({ visible: true })
+      .click();
   }
 }

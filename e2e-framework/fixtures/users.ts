@@ -65,7 +65,7 @@ export class Visitor extends User {
   }
 
   async signOut(): Promise<void> {
-    await this.signOutMenu.signOut();
+    await this.signOutMenu.signOut(this.account);
     this.signedInAs = undefined;
   }
 }

@@ -173,7 +173,26 @@ of a step that is wrong. The limits of a list:
 - Two pages in a row with one text have a step between them.
 - A list without a fill signs in the account the environment chooses.
 - The switching-users test requires "Disconnect" to return the browser to
-  the first sign-in page.
+  the first sign-in page, or `sign-out.json` to lead back to it.
+
+### sign-out.json
+
+An environment whose sign-out asks something after "Disconnect", such as
+which account to sign out of, describes it in `sign-out.json`: the steps from
+"Disconnect" to the first sign-in page. Without the file, "Disconnect" leads
+straight to it. Microsoft Entra ID, in French:
+
+```json
+[{ "choose": "username" }, { "click": "Utiliser un autre compte" }]
+```
+
+| Step                  | Does                                                                                                     |
+| --------------------- | -------------------------------------------------------------------------------------------------------- |
+| `{ "click": text }`   | Clicks the button or the link with this name, as in `sign-in.json`                                       |
+| `{ "choose": value }` | Clicks the text that is the account's `username` or `email` alone, whatever its capitals, such as a tile |
+
+Global setup checks the file as it checks `sign-in.json`. The file is not
+committed and not in the image: a working copy or a run mounts its own.
 
 ## Run the tests
 
