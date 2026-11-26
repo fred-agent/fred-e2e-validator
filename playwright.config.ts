@@ -43,6 +43,29 @@ function anyTag(tags: readonly string[]): RegExp | undefined {
 }
 const grepInvert = anyTag(envConfig.excludeTags);
 
+/**
+ * The browser's proxy, from HTTPS_PROXY and NO_PROXY, for an environment that
+ * reaches its identity provider through one. NO_PROXY lists the hosts reached
+ * directly, such as Fred's, separated by commas.
+ */
+function browserProxy():
+  | { server: string; bypass?: string; username?: string; password?: string }
+  | undefined {
+  const value = (process.env.HTTPS_PROXY ?? process.env.https_proxy)?.trim();
+  if (!value) return undefined;
+  const url = new URL(value);
+  const bypass = (process.env.NO_PROXY ?? process.env.no_proxy)?.trim();
+  return {
+    server: `${url.protocol}//${url.host}`,
+    ...(bypass && { bypass }),
+    ...(url.username && {
+      username: decodeURIComponent(url.username),
+      password: decodeURIComponent(url.password),
+    }),
+  };
+}
+const proxy = browserProxy();
+
 const zephyrDir = zephyrReportDir(import.meta.dirname);
 
 const html: ReporterDescription = [
@@ -97,6 +120,7 @@ export default defineConfig({
     // An environment whose certificate an internal authority signs, which
     // the image does not trust, sets FRED_IGNORE_HTTPS_ERRORS=true.
     ignoreHTTPSErrors: process.env.FRED_IGNORE_HTTPS_ERRORS === "true",
+    ...(proxy && { proxy }),
     // Page objects use English labels. Accounts without a saved preference
     // inherit the browser language.
     locale: "en-US",
