@@ -94,6 +94,9 @@ export default defineConfig({
   captureGitInfo: { commit: false, diff: false },
   use: {
     baseURL: fredBaseUrl(envConfig),
+    // An environment whose certificate an internal authority signs, which
+    // the image does not trust, sets FRED_IGNORE_HTTPS_ERRORS=true.
+    ignoreHTTPSErrors: process.env.FRED_IGNORE_HTTPS_ERRORS === "true",
     // Page objects use English labels. Accounts without a saved preference
     // inherit the browser language.
     locale: "en-US",
