@@ -6,22 +6,24 @@
 // reasoning of the creation assistant.
 import { test } from "../../e2e-framework/fixtures/test.ts";
 
-test.describe("Platform prompts", () => {
+test.describe("Platform prompts", { tag: ["@admin", "@prompt"] }, () => {
   test.describe("A platform admin reads the platform's prompts", () => {
-    for (const prompt of [
-      "Creation assistant",
-      "Platform system prompt",
+    for (const [prompt, tags] of [
+      ["Creation assistant", ["@preprod"]],
+      ["Platform system prompt", ["@preprod"]],
     ] as const) {
-      test(`A platform admin sees the text of the prompt "${prompt}"`, async ({
-        admin,
-      }) => {
-        await test.step(`admin opens the console section "Platform prompts" and chooses "${prompt}"`, async () => {
-          await admin.flows.openConsoleSection("Platform prompts");
-          await admin.pages.platformPrompts.choose(prompt);
-        });
-        await test.step('admin sees "Prompt text" with the count of its characters', () =>
-          admin.pages.platformPrompts.expectText());
-      });
+      test(
+        `A platform admin sees the text of the prompt "${prompt}"`,
+        { tag: [...tags] },
+        async ({ admin }) => {
+          await test.step(`admin opens the console section "Platform prompts" and chooses "${prompt}"`, async () => {
+            await admin.flows.openConsoleSection("Platform prompts");
+            await admin.pages.platformPrompts.choose(prompt);
+          });
+          await test.step('admin sees "Prompt text" with the count of its characters', () =>
+            admin.pages.platformPrompts.expectText());
+        },
+      );
     }
   });
 
@@ -44,12 +46,16 @@ test.describe("Platform prompts", () => {
     });
   });
 
-  test.describe("A platform admin chooses the creation assistant's model and reasoning", () => {
-    test.fixme("A chosen reasoning of the creation assistant is shown again", () => {
-      // Planned: changes a choice for every team or every user, which no fixture puts back.
-      // admin opens the console section "Platform prompts" and chooses "Creation assistant"
-      // admin saves the reasoning "Low" for the creation assistant
-      // admin opens the console section "Platform prompts" again and sees the reasoning "Low" in "Creation assistant"
-    });
-  });
+  test.describe(
+    "A platform admin chooses the creation assistant's model and reasoning",
+    { tag: "@model" },
+    () => {
+      test.fixme("A chosen reasoning of the creation assistant is shown again", () => {
+        // Planned: changes a choice for every team or every user, which no fixture puts back.
+        // admin opens the console section "Platform prompts" and chooses "Creation assistant"
+        // admin saves the reasoning "Low" for the creation assistant
+        // admin opens the console section "Platform prompts" again and sees the reasoning "Low" in "Creation assistant"
+      });
+    },
+  );
 });

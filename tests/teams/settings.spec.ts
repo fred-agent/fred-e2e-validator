@@ -16,110 +16,130 @@ test.describe("Team settings", { tag: "@team" }, () => {
   });
 
   test.describe("A team admin reaches every section of the team's settings", () => {
-    for (const section of [
-      "Members",
-      "Settings",
-      "Activity",
-      "Analytics",
-      "Models",
+    for (const [section, tags] of [
+      ["Members", ["@preprod"]],
+      ["Settings", ["@preprod"]],
+      ["Activity", ["@preprod"]],
+      ["Analytics", ["@preprod"]],
+      ["Models", ["@model", "@preprod"]],
     ] as const) {
-      test(`A team admin sees the settings section "${section}"`, async ({
-        admin,
-      }) => {
-        await test.step(`admin opens the settings section "${section}" of the team`, () =>
-          admin.flows.openTeamSettings(team, section));
-        await test.step(`admin sees the settings section "${section}"`, () =>
-          admin.pages.teamSettings.expectSectionShown(section));
-      });
+      test(
+        `A team admin sees the settings section "${section}"`,
+        { tag: [...tags] },
+        async ({ admin }) => {
+          await test.step(`admin opens the settings section "${section}" of the team`, () =>
+            admin.flows.openTeamSettings(team, section));
+          await test.step(`admin sees the settings section "${section}"`, () =>
+            admin.pages.teamSettings.expectSectionShown(section));
+        },
+      );
     }
   });
 
   test.describe("A team admin sees the tools to manage members", () => {
-    test("A team admin sees a search of the team's members", async ({
-      admin,
-    }) => {
-      await test.step("admin opens the members of the team", () =>
-        admin.flows.openTeamMembers(team));
-      await test.step('admin sees the search "Search for a member"', () =>
-        admin.pages.teamMembers.expectSearch());
-    });
+    test(
+      "A team admin sees a search of the team's members",
+      { tag: "@preprod" },
+      async ({ admin }) => {
+        await test.step("admin opens the members of the team", () =>
+          admin.flows.openTeamMembers(team));
+        await test.step('admin sees the search "Search for a member"', () =>
+          admin.pages.teamMembers.expectSearch());
+      },
+    );
 
-    test("A team admin sees invitation by link", async ({ admin }) => {
-      await test.step("admin opens the members of the team", () =>
-        admin.flows.openTeamMembers(team));
-      await test.step('admin opens "Invite link", sees "Enable invitation by link" and closes the dialog unchanged', () =>
-        admin.pages.teamMembers.expectInviteLinkDialog());
-    });
+    test(
+      "A team admin sees invitation by link",
+      { tag: "@preprod" },
+      async ({ admin }) => {
+        await test.step("admin opens the members of the team", () =>
+          admin.flows.openTeamMembers(team));
+        await test.step('admin opens "Invite link", sees "Enable invitation by link" and closes the dialog unchanged', () =>
+          admin.pages.teamMembers.expectInviteLinkDialog());
+      },
+    );
   });
 
   test.describe("The team's settings show the team's own name", () => {
-    test("A team admin sees the team's name in its settings", async ({
-      admin,
-    }) => {
-      await test.step('admin opens the settings section "Settings" of the team', () =>
-        admin.flows.openTeamSettings(team, "Settings"));
-      await test.step('admin sees the team\'s name in "Team name"', () =>
-        admin.pages.teamParameters.expectName(team.name));
-    });
+    test(
+      "A team admin sees the team's name in its settings",
+      { tag: "@preprod" },
+      async ({ admin }) => {
+        await test.step('admin opens the settings section "Settings" of the team', () =>
+          admin.flows.openTeamSettings(team, "Settings"));
+        await test.step('admin sees the team\'s name in "Team name"', () =>
+          admin.pages.teamParameters.expectName(team.name));
+      },
+    );
   });
 
   test.describe("A team admin sees the team's analytics by topic", () => {
-    for (const topic of ["Overview", "My usage"] as const) {
-      test(`A team admin sees the analytics topic "${topic}"`, async ({
-        admin,
-      }) => {
-        await test.step('admin opens the settings section "Analytics" of the team', () =>
-          admin.flows.openTeamSettings(team, "Analytics"));
-        await test.step(`admin chooses the analytics topic "${topic}"`, () =>
-          admin.pages.analytics.chooseTopic(topic));
-        await test.step(`admin sees the topic "${topic}" selected and its panel shown`, () =>
-          admin.pages.analytics.expectTopic(topic));
-      });
+    for (const [topic, tags] of [
+      ["Overview", ["@preprod"]],
+      ["My usage", ["@preprod"]],
+    ] as const) {
+      test(
+        `A team admin sees the analytics topic "${topic}"`,
+        { tag: [...tags] },
+        async ({ admin }) => {
+          await test.step('admin opens the settings section "Analytics" of the team', () =>
+            admin.flows.openTeamSettings(team, "Analytics"));
+          await test.step(`admin chooses the analytics topic "${topic}"`, () =>
+            admin.pages.analytics.chooseTopic(topic));
+          await test.step(`admin sees the topic "${topic}" selected and its panel shown`, () =>
+            admin.pages.analytics.expectTopic(topic));
+        },
+      );
     }
   });
 
   test.describe("A platform admin manages a team from the console", () => {
-    test("A platform admin sees a team's name in its edit form", async ({
-      admin,
-    }) => {
-      await test.step('admin opens the console section "Teams"', () =>
-        admin.flows.openConsoleSection("Teams"));
-      await test.step("admin opens the edit form of the team, sees its name and closes the form unsaved", () =>
-        admin.pages.adminTeams.expectEditForm(team.name));
-    });
+    test(
+      "A platform admin sees a team's name in its edit form",
+      { tag: "@preprod" },
+      async ({ admin }) => {
+        await test.step('admin opens the console section "Teams"', () =>
+          admin.flows.openConsoleSection("Teams"));
+        await test.step("admin opens the edit form of the team, sees its name and closes the form unsaved", () =>
+          admin.pages.adminTeams.expectEditForm(team.name));
+      },
+    );
 
-    test("A platform admin sees the invite links of a team", async ({
-      admin,
-    }) => {
-      await test.step('admin opens the console section "Teams"', () =>
-        admin.flows.openConsoleSection("Teams"));
-      await test.step('admin opens "Manage links" of the team, sees "Create link" and closes the invitations unchanged', () =>
-        admin.pages.adminTeams.expectInvitations(team.name));
-    });
+    test(
+      "A platform admin sees the invite links of a team",
+      { tag: "@preprod" },
+      async ({ admin }) => {
+        await test.step('admin opens the console section "Teams"', () =>
+          admin.flows.openConsoleSection("Teams"));
+        await test.step('admin opens "Manage links" of the team, sees "Create link" and closes the invitations unchanged', () =>
+          admin.pages.adminTeams.expectInvitations(team.name));
+      },
+    );
   });
 
   test.describe("A platform admin edits a team from the console", () => {
-    test("A team renamed in the console is listed under its new name", async ({
-      admin,
-      teams,
-    }) => {
-      const renamed =
-        await test.step('admin opens the console section "Teams" and renames the team in its edit form', () =>
-          teams.rename(team, "settings renamed"));
-      await test.step('admin opens the console section "Teams" again and sees the team under its new name and not under the old one', async () => {
-        await admin.flows.openConsoleSection("Teams");
-        await admin.pages.adminTeams.expectListedInstead(
-          renamed.name,
-          team.name,
-        );
-      });
-    });
+    test(
+      "A team renamed in the console is listed under its new name",
+      { tag: "@preprod" },
+      async ({ admin, teams }) => {
+        const renamed =
+          await test.step('admin opens the console section "Teams" and renames the team in its edit form', () =>
+            teams.rename(team, "settings renamed"));
+        await test.step('admin opens the console section "Teams" again and sees the team under its new name and not under the old one', async () => {
+          await admin.flows.openConsoleSection("Teams");
+          await admin.pages.adminTeams.expectListedInstead(
+            renamed.name,
+            team.name,
+          );
+        });
+      },
+    );
   });
 
   test.describe("The console's invitation links let people join the team", () => {
     test(
       "A user who follows one of the console's invitation links joins the team",
-      { tag: "@extended" },
+      { tag: "@preprod" },
       async ({ admin, secondUser }) => {
         const link =
           await test.step('admin opens the console section "Teams", turns on the link access of the team and creates an invitation link of the team', async () => {
@@ -140,7 +160,7 @@ test.describe("Team settings", { tag: "@team" }, () => {
   test.describe("A revoked invitation link of the console no longer lets people join the team", () => {
     test(
       "A user who follows a revoked invitation link does not join the team",
-      { tag: "@extended" },
+      { tag: "@preprod" },
       async ({ admin, secondUser }) => {
         const link =
           await test.step('admin opens the console section "Teams", turns on the link access of the team and creates an invitation link of the team', async () => {
@@ -161,7 +181,7 @@ test.describe("Team settings", { tag: "@team" }, () => {
   test.describe("Turning a team's link access off suspends the console's invitation links", () => {
     test(
       "An invitation link of a team without link access no longer works",
-      { tag: "@extended" },
+      { tag: "@preprod" },
       async ({ admin, secondUser }) => {
         const link =
           await test.step('admin opens the console section "Teams", turns on the link access of the team and creates an invitation link of the team', async () => {
@@ -179,48 +199,66 @@ test.describe("Team settings", { tag: "@team" }, () => {
     );
   });
 
-  test.describe("A new team publishes agents by the platform default", () => {
-    test('The marketplace settings show "Default" for a new team', async ({
-      admin,
-    }) => {
-      await test.step('admin opens the console section "Marketplaces"', () =>
-        admin.flows.openConsoleSection("Marketplaces"));
-      await test.step('admin sees the publishing choice "Default" checked for the team', () =>
-        admin.pages.marketplaceSettings.expectTeamPublishing(
-          team.name,
-          "Default",
-        ));
-    });
-  });
+  test.describe(
+    "A new team publishes agents by the platform default",
+    { tag: "@marketplace" },
+    () => {
+      test(
+        'The marketplace settings show "Default" for a new team',
+        { tag: "@preprod" },
+        async ({ admin }) => {
+          await test.step('admin opens the console section "Marketplaces"', () =>
+            admin.flows.openConsoleSection("Marketplaces"));
+          await test.step('admin sees the publishing choice "Default" checked for the team', () =>
+            admin.pages.marketplaceSettings.expectTeamPublishing(
+              team.name,
+              "Default",
+            ));
+        },
+      );
+    },
+  );
 
   test.describe("A team's description follows length rules", () => {
-    test("A description that is too long is refused", async ({ admin }) => {
-      await test.step('admin opens the settings section "Settings" of the team', () =>
-        admin.flows.openTeamSettings(team, "Settings"));
-      await test.step("admin writes a description of 501 characters", () =>
-        admin.pages.teamParameters.writeTooLongDescription());
-      await test.step("admin sees that the description holds at most 500 characters", () =>
-        admin.pages.teamParameters.expectDescriptionCut());
-    });
+    test(
+      "A description that is too long is refused",
+      { tag: "@preprod" },
+      async ({ admin }) => {
+        await test.step('admin opens the settings section "Settings" of the team', () =>
+          admin.flows.openTeamSettings(team, "Settings"));
+        await test.step("admin writes a description of 501 characters", () =>
+          admin.pages.teamParameters.writeTooLongDescription());
+        await test.step("admin sees that the description holds at most 500 characters", () =>
+          admin.pages.teamParameters.expectDescriptionCut());
+      },
+    );
   });
 
   test.describe("A team's retention stays under the platform cap", () => {
-    test("A value above the cap is refused", async ({ admin }) => {
-      await test.step('admin opens the settings section "Settings" of the team', () =>
-        admin.flows.openTeamSettings(team, "Settings"));
-      await test.step("admin sets a deletion grace period above the platform cap and leaves the field", () =>
-        admin.pages.teamParameters.setGracePeriodAboveCap());
-      await test.step("admin sees that the period exceeds the platform cap", () =>
-        admin.pages.teamParameters.expectGracePeriodRefused());
-    });
+    test(
+      "A value above the cap is refused",
+      { tag: "@preprod" },
+      async ({ admin }) => {
+        await test.step('admin opens the settings section "Settings" of the team', () =>
+          admin.flows.openTeamSettings(team, "Settings"));
+        await test.step("admin sets a deletion grace period above the platform cap and leaves the field", () =>
+          admin.pages.teamParameters.setGracePeriodAboveCap());
+        await test.step("admin sees that the period exceeds the platform cap", () =>
+          admin.pages.teamParameters.expectGracePeriodRefused());
+      },
+    );
   });
 
-  test.describe("A team keeps its default model", () => {
-    test("The default model cannot be turned off", async ({ admin }) => {
-      await test.step('admin opens the settings section "Models" of the team', () =>
-        admin.flows.openTeamSettings(team, "Models"));
-      await test.step("admin sees the default model on and its switch disabled", () =>
-        admin.pages.teamModels.expectDefaultModelFixed());
-    });
+  test.describe("A team keeps its default model", { tag: "@model" }, () => {
+    test(
+      "The default model cannot be turned off",
+      { tag: "@preprod" },
+      async ({ admin }) => {
+        await test.step('admin opens the settings section "Models" of the team', () =>
+          admin.flows.openTeamSettings(team, "Models"));
+        await test.step("admin sees the default model on and its switch disabled", () =>
+          admin.pages.teamModels.expectDefaultModelFixed());
+      },
+    );
   });
 });

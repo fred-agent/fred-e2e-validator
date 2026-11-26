@@ -21,16 +21,14 @@ overwrites and leaves behind nothing it did not create.
 - A test deletes, overwrites or removes no user, team or data it did not
   create, and does nothing that cannot be put back; the rules only such a
   test could check stay planned, each with its reason.
-- `@extended` marks a test that needs several accounts or signs in through the
-  form, and `@team` a test that creates a team.
+- `@team` marks every test that creates a team.
 - A folder is opened with a double-click.
 
 ## Capabilities
 
 ### Modified Capabilities
 
-- `test-files`: the tags, what a test without `@extended` uses and creates,
-  and what no test does.
+- `test-files`: temporary-team and personal-space tests and their cleanup.
 - `test-fixtures`: `prompts`, `preferences`, the agents of any space, a
   team's other admins and its rename.
 

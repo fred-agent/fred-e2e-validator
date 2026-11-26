@@ -10,7 +10,7 @@ import {
 
 test.describe(
   "Browsing the marketplace",
-  { tag: ["@team", "@extended"] },
+  { tag: ["@marketplace", "@team"] },
   () => {
     test.beforeEach(async ({ teams }) => {
       await test.step("admin creates a team with secondUser as a member", () =>
@@ -18,36 +18,46 @@ test.describe(
     });
 
     test.describe("A member browses the community's teams, agents and prompts", () => {
-      for (const kind of ["Teams", "Agents", "Prompts"] as const) {
-        test(`A member sees the community's "${kind}"`, async ({
-          secondUser,
-        }) => {
-          await test.step(`secondUser loads the home page, opens the marketplace and chooses "${kind}"`, () =>
-            secondUser.pages.marketplace.browse(kind));
-          await test.step(`secondUser sees the community's "${kind}"`, () =>
-            secondUser.pages.marketplace.expectKind(kind));
-        });
+      for (const [kind, tags] of [
+        ["Teams", ["@preprod"]],
+        ["Agents", ["@preprod"]],
+        ["Prompts", ["@preprod"]],
+      ] as const) {
+        test(
+          `A member sees the community's "${kind}"`,
+          { tag: [...tags] },
+          async ({ secondUser }) => {
+            await test.step(`secondUser loads the home page, opens the marketplace and chooses "${kind}"`, () =>
+              secondUser.pages.marketplace.browse(kind));
+            await test.step(`secondUser sees the community's "${kind}"`, () =>
+              secondUser.pages.marketplace.expectKind(kind));
+          },
+        );
       }
     });
 
     test.describe("The marketplace shows a search of teams and of prompts", () => {
-      test("A member sees a search of the community's teams", async ({
-        secondUser,
-      }) => {
-        await test.step('secondUser loads the home page, opens the marketplace and chooses "Teams"', () =>
-          secondUser.pages.marketplace.browse("Teams"));
-        await test.step('secondUser sees the search "Search for a team"', () =>
-          secondUser.pages.marketplace.expectSearch("Teams"));
-      });
+      test(
+        "A member sees a search of the community's teams",
+        { tag: "@preprod" },
+        async ({ secondUser }) => {
+          await test.step('secondUser loads the home page, opens the marketplace and chooses "Teams"', () =>
+            secondUser.pages.marketplace.browse("Teams"));
+          await test.step('secondUser sees the search "Search for a team"', () =>
+            secondUser.pages.marketplace.expectSearch("Teams"));
+        },
+      );
 
-      test("A member sees a search of the community's prompts", async ({
-        secondUser,
-      }) => {
-        await test.step('secondUser loads the home page, opens the marketplace and chooses "Prompts"', () =>
-          secondUser.pages.marketplace.browse("Prompts"));
-        await test.step('secondUser sees the search "Search a prompt..."', () =>
-          secondUser.pages.marketplace.expectSearch("Prompts"));
-      });
+      test(
+        "A member sees a search of the community's prompts",
+        { tag: "@preprod" },
+        async ({ secondUser }) => {
+          await test.step('secondUser loads the home page, opens the marketplace and chooses "Prompts"', () =>
+            secondUser.pages.marketplace.browse("Prompts"));
+          await test.step('secondUser sees the search "Search a prompt..."', () =>
+            secondUser.pages.marketplace.expectSearch("Prompts"));
+        },
+      );
     });
 
     test.describe("An agent is shared through the marketplace", () => {

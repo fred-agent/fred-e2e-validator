@@ -220,9 +220,8 @@ factory fixtures; [WRITING-TESTS](WRITING-TESTS.md#a-flow) gives its rules.
 - **Shared state.** The tests of a worker share each account's preferences,
   personal-space contents and memberships: what a test creates is removed in
   its factory's teardown, and a changed preference is restored as
-  [WRITING-TESTS](WRITING-TESTS.md#setup-and-created-objects) says. One
-  account may serve `admin` and `member`, and the tests without `@extended`
-  need no other.
+  [WRITING-TESTS](WRITING-TESTS.md#setup-and-created-objects) says. Each
+  active worker needs exclusive use of its dedicated accounts.
 - After a failed test, each open user's page is described by
   `describePage(page)` of `components/page-state.ts`, a plain function that
   carries no `@step`, and attached as `PAGE_AT_FAILURE`, for the report and
@@ -588,7 +587,7 @@ title path in the same file. Each line of a test list then names one test.
 | A `test.describe` per rule of the product, a `test` per case          | The list and the HTML report show each test under the rule of the product it checks; the run page shows each file's tests by title path                                                                                                                                               |
 | Steps written in the test, each titled for exactly what its body does | A test reads as what it does, and the HTML report and the run log show each step by that title                                                                                                                                                                                        |
 | Planned tests: `test.fixme` with their steps as comments              | Every rule of the product has a test; a search of `tests/` and the run page show what is automated and what is planned, and a planned test's steps are written before it is automated                                                                                                 |
-| Tags `@smoke`, `@model`, `@ppt`, `@team` and `@extended`              | `--grep @smoke` runs a quick check of an environment; `excludeTags` leaves out the tests that need a model, the capability "Generate a presentation", a team of their own or several accounts, where an environment cannot run them                                                   |
+| Section and feature tags, `@smoke` and `@preprod`                     | Section tags select product areas. `@smoke` selects the quick sign-in check. `@preprod` selects individually reviewed shared-canary cases.                                                                                                                                            |
 | `test-data/test-data.json` and `testData`                             | The values several tests share, the space, the agent template and the use case, are in one committed file, checked by a strict schema and typed in tests                                                                                                                              |
 | `make test TESTS=…`                                                   | One entry point beside the other targets, passing Playwright's own arguments to `npx playwright test`                                                                                                                                                                                 |
 | The check for `*.test.ts` under `e2e-framework/`                      | The support code is checked by running the tests against a local Fred; unit tests belong to the service of the run page                                                                                                                                                               |

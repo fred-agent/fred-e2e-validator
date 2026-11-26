@@ -6,7 +6,7 @@
 // the agents page.
 import { test, type TemporaryTeam } from "../../e2e-framework/fixtures/test.ts";
 
-test.describe("Agent lifecycle", { tag: "@team" }, () => {
+test.describe("Agent lifecycle", { tag: ["@agent", "@team"] }, () => {
   let team: TemporaryTeam;
 
   test.beforeEach(async ({ teams, testData }) => {
@@ -59,37 +59,43 @@ test.describe("Agent lifecycle", { tag: "@team" }, () => {
     });
   });
 
-  test.describe("A deactivated agent cannot be chatted with", () => {
-    test('Deactivating an agent disables its "Chat"', async ({
-      admin,
-      agents,
-    }) => {
-      const agent = await test.step("admin creates an agent in the team", () =>
-        agents.create(admin, team, "agent"));
-      await test.step("admin opens the agents of the team and deactivates the agent", async () => {
-        await admin.flows.openAgents(team);
-        await admin.pages.agents.deactivate(agent.name);
+  test.describe(
+    "A deactivated agent cannot be chatted with",
+    { tag: "@chat" },
+    () => {
+      test('Deactivating an agent disables its "Chat"', async ({
+        admin,
+        agents,
+      }) => {
+        const agent =
+          await test.step("admin creates an agent in the team", () =>
+            agents.create(admin, team, "agent"));
+        await test.step("admin opens the agents of the team and deactivates the agent", async () => {
+          await admin.flows.openAgents(team);
+          await admin.pages.agents.deactivate(agent.name);
+        });
+        await test.step('admin reloads the agents and sees "Chat" of the agent disabled', () =>
+          admin.pages.agents.reloadAndExpectCannotChat(agent.name));
       });
-      await test.step('admin reloads the agents and sees "Chat" of the agent disabled', () =>
-        admin.pages.agents.reloadAndExpectCannotChat(agent.name));
-    });
 
-    test('Activating a deactivated agent brings "Chat" back', async ({
-      admin,
-      agents,
-    }) => {
-      const agent = await test.step("admin creates an agent in the team", () =>
-        agents.create(admin, team, "agent"));
-      await test.step("admin opens the agents of the team and deactivates the agent", async () => {
-        await admin.flows.openAgents(team);
-        await admin.pages.agents.deactivate(agent.name);
+      test('Activating a deactivated agent brings "Chat" back', async ({
+        admin,
+        agents,
+      }) => {
+        const agent =
+          await test.step("admin creates an agent in the team", () =>
+            agents.create(admin, team, "agent"));
+        await test.step("admin opens the agents of the team and deactivates the agent", async () => {
+          await admin.flows.openAgents(team);
+          await admin.pages.agents.deactivate(agent.name);
+        });
+        await test.step("admin activates the agent", () =>
+          admin.pages.agents.activate(agent.name));
+        await test.step('admin reloads the agents and sees "Chat" of the agent enabled', () =>
+          admin.pages.agents.reloadAndExpectCanChat(agent.name));
       });
-      await test.step("admin activates the agent", () =>
-        admin.pages.agents.activate(agent.name));
-      await test.step('admin reloads the agents and sees "Chat" of the agent enabled', () =>
-        admin.pages.agents.reloadAndExpectCanChat(agent.name));
-    });
-  });
+    },
+  );
 
   test.describe("An agent can be restricted to chosen folders", () => {
     test("The chosen folder is kept after the page is opened again", async ({
@@ -113,34 +119,26 @@ test.describe("Agent lifecycle", { tag: "@team" }, () => {
     });
   });
 
-  test.describe(
-    "A reader sees agents without changing them",
-    { tag: "@extended" },
-    () => {
-      test("A reader sees no create action and no card menu", async ({
-        admin,
-        secondUser,
-        agents,
-      }) => {
-        const agent =
-          await test.step("admin creates an agent in the team", () =>
-            agents.create(admin, team, "agent"));
-        await test.step("admin opens the members of the team and adds secondUser", async () => {
-          await admin.flows.openTeamMembers(team);
-          await admin.pages.teamMembers.addMember(
-            secondUser.account,
-            team.name,
-          );
-        });
-        await test.step("secondUser opens the agents of the team", () =>
-          secondUser.flows.openAgents(team));
-        await test.step('secondUser reloads the agents and does not see "Create Agent"', () =>
-          secondUser.pages.agents.reloadAndExpectButtonAbsent("Create Agent"));
-        await test.step('secondUser reloads the agents and sees the agent without "More actions"', () =>
-          secondUser.pages.agents.reloadAndExpectNoMenu(agent.name));
+  test.describe("A reader sees agents without changing them", () => {
+    test("A reader sees no create action and no card menu", async ({
+      admin,
+      secondUser,
+      agents,
+    }) => {
+      const agent = await test.step("admin creates an agent in the team", () =>
+        agents.create(admin, team, "agent"));
+      await test.step("admin opens the members of the team and adds secondUser", async () => {
+        await admin.flows.openTeamMembers(team);
+        await admin.pages.teamMembers.addMember(secondUser.account, team.name);
       });
-    },
-  );
+      await test.step("secondUser opens the agents of the team", () =>
+        secondUser.flows.openAgents(team));
+      await test.step('secondUser reloads the agents and does not see "Create Agent"', () =>
+        secondUser.pages.agents.reloadAndExpectButtonAbsent("Create Agent"));
+      await test.step('secondUser reloads the agents and sees the agent without "More actions"', () =>
+        secondUser.pages.agents.reloadAndExpectNoMenu(agent.name));
+    });
+  });
 
   test.describe("An editor deletes agents", () => {
     test("A deleted agent is no longer listed", async ({ admin, agents }) => {
@@ -268,7 +266,7 @@ test.describe("Agent lifecycle", { tag: "@team" }, () => {
     });
   });
 
-  test.describe("The agent form recommends models", () => {
+  test.describe("The agent form recommends models", { tag: "@model" }, () => {
     test("The recommended models are listed first", async ({
       admin,
       agents,

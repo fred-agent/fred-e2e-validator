@@ -5,7 +5,7 @@ outside the repository; no task adds a unit test.
 
 ## 1. Tags and folders
 
-- [x] 1.1 The tags of design D1 in every test file: `@team` on the files whose tests create a team, `@extended` on the groups and tests that need a second account or sign in through the form, none on the files of the personal space. Docs: [pw:test-annotations](https://playwright.dev/docs/test-annotations#tag-tests).
+- [x] 1.1 Apply design D1 in every test file by marking the cases that create a temporary team with `@team`. Docs: [pw:test-annotations](https://playwright.dev/docs/test-annotations#tag-tests).
 - [x] 1.2 `components/resource-table.ts`: a folder opens with a double-click. Docs: [pw:api/class-locator#locator-dblclick](https://playwright.dev/docs/api/class-locator#locator-dblclick).
 
 ## 2. The user's own profile, home page, prompts and documents
@@ -37,4 +37,4 @@ outside the repository; no task adds a unit test.
 
 - [x] 6.1 `WRITING-TESTS.md`: the tags, the fixtures, restored preferences. `ARCHITECTURE.md`: the fixtures, their removals and order, the signs a page waits for, the tags and what a test leaves alone. `README.md`: what the accounts need.
 - [x] 6.2 `make code-quality`, `make test-unit`, `make spec-check`.
-- [x] 6.3 Against the local Fred with `excludeTags` of `["@extended"]` and one account for `admin` and `member`, and with `excludeTags` empty: every test passes or fails for a cause of Fred or of the local setup that is named, and the personal space, the profile, the marketplace and the list of teams are as before the run. `npx playwright test --list` shows the tests of each tag. Docs: [pw:test-cli](https://playwright.dev/docs/test-cli).
+- [x] 6.3 Against the local Fred for single-user cases with one account for `admin` and `member`, and for the complete suite with distinct accounts: every test passes or fails for a cause of Fred or of the local setup that is named, and the personal space, the profile, the marketplace and the list of teams are as before the run. `npx playwright test --list` shows the tests of each tag. Docs: [pw:test-cli](https://playwright.dev/docs/test-cli).

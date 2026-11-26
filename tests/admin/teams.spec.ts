@@ -8,37 +8,41 @@
 // technical console.
 import { test } from "../../e2e-framework/fixtures/test.ts";
 
-test.describe("Team administration", () => {
+test.describe("Team administration", { tag: "@admin" }, () => {
   test.describe("The technical console opens on Teams for a platform admin", () => {
-    test("A platform admin who opens the console sees the Teams section", async ({
-      admin,
-    }) => {
-      await test.step("admin opens the technical console from the main navigation", () =>
-        admin.pages.adminConsole.open());
-      await test.step('admin sees the console section "Teams" with the platform\'s existing teams', async () => {
-        await admin.pages.adminConsole.expectSectionShown("Teams");
-        await admin.pages.adminTeams.expectTeamsListed();
-      });
-    });
+    test(
+      "A platform admin who opens the console sees the Teams section",
+      { tag: "@preprod" },
+      async ({ admin }) => {
+        await test.step("admin opens the technical console from the main navigation", () =>
+          admin.pages.adminConsole.open());
+        await test.step('admin sees the console section "Teams" with the platform\'s existing teams', async () => {
+          await admin.pages.adminConsole.expectSectionShown("Teams");
+          await admin.pages.adminTeams.expectTeamsListed();
+        });
+      },
+    );
   });
 
   test.describe("A platform admin sees team creation and the default teams of new users", () => {
-    test('A platform admin sees "Create team" and the default teams of new users', async ({
-      admin,
-    }) => {
-      await test.step('admin opens the console section "Teams"', () =>
-        admin.flows.openConsoleSection("Teams"));
-      await test.step('admin sees "Create team"', () =>
-        admin.pages.adminTeams.expectButtonVisible("Create team"));
-      await test.step('admin sees the field "Add a team by name" of the default teams of new users', () =>
-        admin.pages.adminTeams.expectDefaultTeamsField());
-    });
+    test(
+      'A platform admin sees "Create team" and the default teams of new users',
+      { tag: "@preprod" },
+      async ({ admin }) => {
+        await test.step('admin opens the console section "Teams"', () =>
+          admin.flows.openConsoleSection("Teams"));
+        await test.step('admin sees "Create team"', () =>
+          admin.pages.adminTeams.expectButtonVisible("Create team"));
+        await test.step('admin sees the field "Add a team by name" of the default teams of new users', () =>
+          admin.pages.adminTeams.expectDefaultTeamsField());
+      },
+    );
   });
 
   test.describe("A team name is unique", () => {
     test(
       "A second team with an existing name is refused",
-      { tag: "@team" },
+      { tag: ["@team", "@preprod"] },
       async ({ admin, teams }) => {
         const team = await test.step("admin creates a team", () =>
           teams.create("name"));
@@ -57,7 +61,7 @@ test.describe("Team administration", () => {
   test.describe("New users join the default teams", () => {
     test.fixme(
       "A new user is a member of the default teams",
-      { tag: ["@team", "@extended"] },
+      { tag: "@team" },
       () => {
         // Planned: needs an account that has never signed in.
         // admin creates a team
@@ -71,7 +75,7 @@ test.describe("Team administration", () => {
   test.describe("A team is created with the administrators the platform admin names", () => {
     test(
       "A team created for another user is administered by that user",
-      { tag: ["@team", "@extended"] },
+      { tag: ["@team", "@preprod"] },
       async ({ teams, secondUser }) => {
         const team =
           await test.step("admin creates a team with secondUser as one of its admins", () =>

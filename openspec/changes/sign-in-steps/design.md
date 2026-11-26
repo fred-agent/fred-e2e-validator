@@ -220,8 +220,8 @@ so the upgrade to 0.3.0 does not use it.
   sign-in page is reported as a page of Fred that did not show. → Such
   an environment is not supported.
 - An environment that keeps its own session after "Disconnect" signs the next
-  account in without its pages. → Only `visitor` signs out, and its tests
-  carry `@extended`.
+  account in without its pages. → The switching-users test requires the first
+  sign-in page after "Disconnect".
 - A text in a release's values without quotes, such as `No`, is a boolean in
   YAML, and a `with` of any text reaches the ConfigMap before global setup
   rejects it. → Each text is in quotes, and the list holds no account.

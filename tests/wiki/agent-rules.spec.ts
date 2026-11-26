@@ -7,7 +7,7 @@
 // version history come from the wiki.
 import { test, type TemporaryTeam } from "../../e2e-framework/fixtures/test.ts";
 
-test.describe("Team wiki agent rules", { tag: "@team" }, () => {
+test.describe("Team wiki agent rules", { tag: ["@wiki", "@team"] }, () => {
   let team: TemporaryTeam;
 
   test.beforeEach(async ({ teams }) => {
@@ -57,15 +57,11 @@ test.describe("Team wiki agent rules", { tag: "@team" }, () => {
   });
 
   test.describe('Enabling "Team wiki" for a team gives its members a wiki', () => {
-    test.fixme(
-      'A team for which "Team wiki" is disabled shows its members no wiki',
-      { tag: "@extended" },
-      () => {
-        // Planned: the team's space gives no sign that the application has answered whether the team has a wiki.
-        // admin adds secondUser to the team
-        // admin disables "Team wiki" for the team in the console section "Features"
-        // secondUser opens the team's space and does not see its wiki
-      },
-    );
+    test.fixme('A team for which "Team wiki" is disabled shows its members no wiki', () => {
+      // Planned: the team's space gives no sign that the application has answered whether the team has a wiki.
+      // admin adds secondUser to the team
+      // admin disables "Team wiki" for the team in the console section "Features"
+      // secondUser opens the team's space and does not see its wiki
+    });
   });
 });

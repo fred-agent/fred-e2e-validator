@@ -6,14 +6,18 @@
 // console.
 import { test } from "../../e2e-framework/fixtures/test.ts";
 
-test.describe("Platform activity", () => {
+test.describe("Platform activity", { tag: "@admin" }, () => {
   test.describe("A platform admin sees the platform's background tasks", () => {
-    test("A platform admin sees the background tasks", async ({ admin }) => {
-      await test.step('admin opens the console section "Activity"', () =>
-        admin.flows.openConsoleSection("Activity"));
-      await test.step('admin sees a group of the platform\'s tasks by state, or "No tasks in progress"', () =>
-        admin.pages.activity.expectTaskGroups());
-    });
+    test(
+      "A platform admin sees the background tasks",
+      { tag: "@preprod" },
+      async ({ admin }) => {
+        await test.step('admin opens the console section "Activity"', () =>
+          admin.flows.openConsoleSection("Activity"));
+        await test.step('admin sees a group of the platform\'s tasks by state, or "No tasks in progress"', () =>
+          admin.pages.activity.expectTaskGroups());
+      },
+    );
   });
 
   test.describe("A platform admin dismisses a task that failed or was cancelled", () => {

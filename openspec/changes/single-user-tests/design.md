@@ -20,20 +20,10 @@ chooses with `excludeTags` whether the tests create teams.
 
 ### D1. Tags
 
-| Tag         | Marks                                                               |
-| ----------- | ------------------------------------------------------------------- |
-| `@extended` | A test that needs several accounts or signs in through the form     |
-| `@team`     | A test that creates a team, which the platform administrator does   |
-
-A test that does both carries both
-([pw:test-annotations](https://playwright.dev/docs/test-annotations#tag-tests)).
-A test without `@extended` uses only `admin` and `member`, which may be one
-account. A test without either tag creates only in the member's personal
-space. `excludeTags` of `["@extended"]` runs every test of one user, and
-`["@extended", "@team"]` those that create no team.
-
-A file whose tests all create a team carries `@team` on its top-level group;
-`@extended` stands on the group or the test that needs a second account.
+A test that creates a temporary team carries `@team`. A file whose tests all
+create teams can carry the tag on its top-level group. Setting `excludeTags`
+to `["@team"]` leaves these cases out. A section can include cases run by one
+user and cases that compare distinct users. [Playwright test tags](https://playwright.dev/docs/test-annotations#tag-tests)
 
 ### D2. The tests
 
@@ -107,16 +97,16 @@ list.
 
 ### D7. The tests of a second account, the console and the marketplace
 
-| Area           | Cases                                                                                                                              | Tags                  |
-| -------------- | ---------------------------------------------------------------------------------------------------------------------------------- | --------------------- |
-| Membership     | A removed member and a member who leaves no longer see the team; an editor without the Admin role cannot manage members             | `@team`, `@extended`  |
-| Team admin     | A team admin does not see the console; a team created with another admin                                                           | `@team`, `@extended`  |
-| Prompts        | Favorites belong to each user                                                                                                      | `@team`, `@extended`  |
-| Console        | A team renamed in its edit form; a name in use refused                                                                             | `@team`               |
-| Invitations    | The console's invitation links: joined, revoked, link access off                                                                   | `@team`, `@extended`  |
-| Console views  | Activity, corpus audit, announcements by view, features by kind, marketplaces, platform prompts, teams, user interface, analytics export | none            |
-| Marketplace    | An agent of the test's public team, with its publishing "On", published, listed, liked and imported into another team of the test   | `@team`, `@extended`  |
-| Resources      | The statistics of the personal space by type                                                                                       | none                  |
+| Area          | Cases                                                                                                                                    | Section tags            |
+| ------------- | ---------------------------------------------------------------------------------------------------------------------------------------- | ----------------------- |
+| Membership    | A removed member and a member who leaves no longer see the team; an editor without the Admin role cannot manage members                  | `@team`                 |
+| Team admin    | A team admin does not see the console; a team created with another admin                                                                 | `@admin`, `@team`       |
+| Prompts       | Favorites belong to each user                                                                                                            | `@prompt`, `@team`      |
+| Console       | A team renamed in its edit form; a name in use refused                                                                                   | `@team`                 |
+| Invitations   | The console's invitation links: joined, revoked, link access off                                                                         | `@team`                 |
+| Console views | Activity, corpus audit, announcements by view, features by kind, marketplaces, platform prompts, teams, user interface, analytics export | `@admin`                |
+| Marketplace   | An agent of the test's public team, with its publishing "On", published, listed, liked and imported into another team of the test        | `@marketplace`, `@team` |
+| Resources     | The statistics of the personal space by type                                                                                             | `@resource`             |
 
 `teams.create` accepts additional team administrators in `admins`. The
 fixture records the team ID from the successful creation response.

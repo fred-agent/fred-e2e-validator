@@ -5,18 +5,20 @@
 // console.
 import { test } from "../../e2e-framework/fixtures/test.ts";
 
-test.describe("Platform data", () => {
+test.describe("Platform data", { tag: "@admin" }, () => {
   test.describe("A platform admin sees the export and import of platform data", () => {
-    test('A platform admin sees "Export" and the import of a migration file', async ({
-      admin,
-    }) => {
-      await test.step('admin opens the console section "Platform data"', () =>
-        admin.flows.openConsoleSection("Platform data"));
-      await test.step('admin sees "Export"', () =>
-        admin.pages.platformData.expectButtonVisible("Export"));
-      await test.step('admin sees the import of a migration file with its drop zone, "Label (optional)" and "Launch migration"', () =>
-        admin.pages.platformData.expectMigrationImport());
-    });
+    test(
+      'A platform admin sees "Export" and the import of a migration file',
+      { tag: "@preprod" },
+      async ({ admin }) => {
+        await test.step('admin opens the console section "Platform data"', () =>
+          admin.flows.openConsoleSection("Platform data"));
+        await test.step('admin sees "Export"', () =>
+          admin.pages.platformData.expectButtonVisible("Export"));
+        await test.step('admin sees the import of a migration file with its drop zone, "Label (optional)" and "Launch migration"', () =>
+          admin.pages.platformData.expectMigrationImport());
+      },
+    );
   });
 
   test.describe("A platform admin moves platform data between environments", () => {

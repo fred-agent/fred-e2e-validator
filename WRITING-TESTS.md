@@ -60,7 +60,7 @@ The upload test file, with two of its rules:
 // can edit. Source: Help Center, "Resources".
 import { test, type Folder } from "../../e2e-framework/fixtures/test.ts";
 
-test.describe("Uploading documents", () => {
+test.describe("Uploading documents", { tag: "@document" }, () => {
   let folder: Folder;
 
   test.beforeEach(async ({ member, folders, testData }) => {
@@ -69,16 +69,18 @@ test.describe("Uploading documents", () => {
   });
 
   test.describe("A member adds files to a folder of a space they can edit", () => {
-    test("A file stored without processing is listed as pending", async ({
-      member,
-    }) => {
-      await test.step('member uploads "e2e-sample.txt" into the folder without processing', async () => {
-        await member.flows.openFolder(folder);
-        await member.pages.resources.upload("e2e-sample.txt", "Upload only");
-      });
-      await test.step('member sees "e2e-sample.txt" with the status "Pending"', () =>
-        member.pages.resources.expectStatus("e2e-sample.txt", "Pending"));
-    });
+    test(
+      "A file stored without processing is listed as pending",
+      { tag: "@preprod" },
+      async ({ member }) => {
+        await test.step('member uploads "e2e-sample.txt" into the folder without processing', async () => {
+          await member.flows.openFolder(folder);
+          await member.pages.resources.upload("e2e-sample.txt", "Upload only");
+        });
+        await test.step('member sees "e2e-sample.txt" with the status "Pending"', () =>
+          member.pages.resources.expectStatus("e2e-sample.txt", "Pending"));
+      },
+    );
   });
 
   test.describe("A new file is marked as uploaded", () => {
@@ -189,26 +191,41 @@ file is type-checked.
 
 ## Tags
 
-| Tag         | Marks                                                                               |
-| ----------- | ----------------------------------------------------------------------------------- |
-| `@smoke`    | The sign-in test, a quick check of an environment                                   |
-| `@model`    | A test that needs Fred's embedding or vision models, such as processing a text file |
-| `@ppt`      | A test that needs Fred's PowerPoint capability "Generate a presentation"            |
-| `@team`     | A test that creates a team, which the platform administrator does                   |
-| `@extended` | A test that needs several accounts or signs in through the form                     |
+Give each file's top-level group the tag for its section. The section tags
+are `@account`, `@admin`, `@agent`, `@capability`, `@document`, `@home`,
+`@marketplace`, `@prompt`, `@resource`, `@space`, `@team` and `@wiki`. Every
+case that creates a temporary team also carries `@team`, including cases in
+other sections.
 
-A tag goes on the group or the test that needs it, as `{ tag: "@model" }`
-([tag tests](https://playwright.dev/docs/test-annotations#tag-tests)). The
-list is a convention of this guide. `--grep @smoke` runs the tests
-of a tag, and `excludeTags` of `env-config.json` leaves out the tests of the
-tags an environment cannot run.
+Add feature tags at the narrowest applicable group, case or parameter row.
+A section may contain tests that use several accounts.
+[Playwright test tags](https://playwright.dev/docs/test-annotations#tag-tests)
 
-- A test without `@extended` uses only `admin` and `member`, which may be one
-  account.
-- A test without `@team` and `@extended` creates only in the member's
-  personal space, and changes no setting but the member's own.
-- With `excludeTags` of `["@extended"]` a run holds the tests of one user;
-  with `["@extended", "@team"]`, those that create no team.
+| Tag                | Coverage                                                                                                                    |
+| ------------------ | --------------------------------------------------------------------------------------------------------------------------- |
+| `@chat`            | Conversations                                                                                                               |
+| `@model`           | Team model settings, model choices and model-backed processing                                                              |
+| `@model-discovery` | Cases that open Models in Admin › Features, including its model defaults. These cases stay outside `@model` and `@preprod`. |
+| `@ppt`, `@docx`    | Configuration of the presentation and Word document capabilities. The Word document cases check the agent's saved options.  |
+| `@csv`             | CSV processing and preview                                                                                                  |
+| `@smoke`           | The quick sign-in check                                                                                                     |
+
+### Reviewing a case for `@preprod`
+
+Trace the test, shared setup, fixtures, page visits and teardown. A case
+qualifies when it changes only the dedicated accounts' profiles or personal
+spaces, or resources it creates. Membership changes must use dedicated
+accounts in a team the test creates. Check what loading a view does. For
+example, opening Models in Admin › Features can save the platform model
+list. Granting a feature to a temporary team can initialize a shared
+permission. Both actions disqualify a case, even if teardown succeeds.
+Marketplace publishing, liking and importing also stay outside this selection.
+
+Add `@preprod` to each reviewed automated test's details. For parameterized
+tests, put the tags beside each row and pass them into the test. Reserve
+`@preprod` for individual cases so new tests, new rows and planned cases
+enter the selection only after review and automation. Preview the resulting
+inventory with the [shared-canary command](README.md#shared-canary).
 
 ## Timeouts and budgets
 

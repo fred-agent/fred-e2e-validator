@@ -60,10 +60,9 @@ environment keep their values.
 
 Account set 1 serves the first worker, set 2 the second, and so on: a run of
 two workers needs sets 1 and 2. Global setup stops before a browser starts
-if either set is incomplete. The accounts of a set, and of different
-sets, must be different accounts. An environment whose `excludeTags` holds
-`@extended` may give one account, a platform administrator, to all four
-names: the tests it runs use only `admin` and `member`. An account's
+if either set is incomplete. Give each worker its own set of dedicated
+accounts. The full suite and the shared-canary selection use distinct
+accounts for `admin`, `member`, `secondUser` and `outsider`. An account's
 language is English and it has no profile picture; a test that changes
 either puts it back. A setting the account never chose, such as its theme,
 is chosen afterwards with the value it had, as Fred's pages cannot undo a
@@ -168,8 +167,8 @@ of a step that is wrong. The limits of a list:
   a first sign-in page that shows on every load is not supported.
 - Two pages in a row with one text have a step between them.
 - A list without a fill signs in the account the environment chooses.
-- After "Disconnect" the first sign-in page shows again; otherwise
-  `excludeTags` with `@extended` leaves out the tests that sign out.
+- The switching-users test requires "Disconnect" to return the browser to
+  the first sign-in page.
 
 ## Run the tests
 
@@ -199,6 +198,43 @@ of each test file, so `documents/upload` matches
 as a `tests/documents/upload-limits.spec.ts`. `--grep` selects tags and
 `--workers` sets one run's workers. The list loads the tests without a Fred
 and without `.env`.
+
+### Shared canary
+
+To run the reviewed cases on an environment shared with other teams, select
+the whole `@preprod` tag. The first command previews the selection without a
+browser. The second runs it.
+
+```bash
+npx playwright test --list --reporter=list --grep '(^|\s)@preprod(\s|$)'
+npx playwright test --grep '(^|\s)@preprod(\s|$)'
+```
+
+On the run page, choose **By tag** and select **`@preprod` alone**. Adding
+another tag also selects every automated case that carries that tag.
+The default `excludeTags` is empty. A run with no selection includes cases
+outside the shared-canary set.
+
+For installations that used one account for every role, provision distinct
+dedicated accounts and remove the obsolete account-count exclusion from the
+deployment configuration. The unfiltered suite includes cases that compare
+two users. With one identity for every role, select individual files whose
+fixtures use only that identity, such as `tests/home/sections.spec.ts`.
+
+Set `space` in `test-data/test-data.json` to the dedicated accounts' personal
+space and give each active worker exclusive use of its account set. These
+cases may create teams visible to platform administrators, change membership
+in those teams, and create agents, folders and prompts. Cases whose setup
+grants a shared feature permission, or that publish, like or import a
+marketplace agent, stay outside this selection.
+
+Normal sign-in can accept terms for the dedicated accounts. Loading home
+or listing teams can repair stale public-team visibility. Audit and usage
+records persist, and a deleted team's starter prompts can still count toward
+the platform total. Interrupted cleanup can leave test-owned resources or
+invitation links behind.
+
+### Reports
 
 The default run produces the filtered HTML report. Open it with `make report`.
 An override such as `--reporter=html` replaces the filter and stops the run

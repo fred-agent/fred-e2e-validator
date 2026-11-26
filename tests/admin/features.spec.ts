@@ -9,16 +9,18 @@
 // features page.
 import { test } from "../../e2e-framework/fixtures/test.ts";
 
-test.describe("Fred features", () => {
+test.describe("Fred features", { tag: "@admin" }, () => {
   test.describe("A platform admin sees Fred's features by kind", () => {
-    test("A platform admin sees a filter of the features by kind", async ({
-      admin,
-    }) => {
-      await test.step('admin opens the console section "Features"', () =>
-        admin.flows.openConsoleSection("Features"));
-      await test.step('admin sees the filter by kind open on "Capabilities", and the capabilities listed with "Enabled for all"', () =>
-        admin.pages.features.expectCapabilitiesListed());
-    });
+    test(
+      "A platform admin sees a filter of the features by kind",
+      { tag: "@preprod" },
+      async ({ admin }) => {
+        await test.step('admin opens the console section "Features"', () =>
+          admin.flows.openConsoleSection("Features"));
+        await test.step('admin sees the filter by kind open on "Capabilities", and the capabilities listed with "Enabled for all"', () =>
+          admin.pages.features.expectCapabilitiesListed());
+      },
+    );
   });
 
   test.describe("Every team sees a feature enabled for all teams", () => {
@@ -34,75 +36,103 @@ test.describe("Fred features", () => {
     );
   });
 
-  test.describe("A platform admin opens a feature to personal spaces", () => {
-    test.fixme("The agent form of a personal space shows a feature opened to personal spaces", () => {
-      // Planned: changes a choice for every team or every user, which no fixture puts back.
-      // admin opens the capability "Generate a presentation" to personal spaces in the console section "Features"
-      // member opens the capabilities of a new agent of the personal space and sees "Generate a presentation"
-    });
-  });
-
-  test.describe("A platform admin turns a model's reasoning on or off", () => {
-    test.fixme(
-      "A model whose reasoning is off shows a team no reasoning default",
-      { tag: "@team" },
-      () => {
+  test.describe(
+    "A platform admin opens a feature to personal spaces",
+    { tag: "@ppt" },
+    () => {
+      test.fixme("The agent form of a personal space shows a feature opened to personal spaces", () => {
         // Planned: changes a choice for every team or every user, which no fixture puts back.
-        // admin creates a team
-        // admin turns the reasoning of the platform's default model off in the console section "Features"
-        // admin opens the settings section "Models" of the team and does not see "Reasoning on by default" for the platform's default model
-      },
-    );
-  });
+        // admin opens the capability "Generate a presentation" to personal spaces in the console section "Features"
+        // member opens the capabilities of a new agent of the personal space and sees "Generate a presentation"
+      });
+    },
+  );
 
-  test.describe("A model's display name is the name users see", () => {
-    test.fixme(
-      "A renamed model is listed under its display name in a team's models",
-      { tag: "@team" },
-      () => {
-        // Planned: a display name overwrites the one an administrator wrote.
-        // admin creates a team
-        // admin gives the platform's default model a new display name in the console section "Features"
-        // admin opens the settings section "Models" of the team and sees the model under its new display name
-      },
-    );
-  });
+  test.describe(
+    "A platform admin turns a model's reasoning on or off",
+    { tag: "@model-discovery" },
+    () => {
+      test.fixme(
+        "A model whose reasoning is off shows a team no reasoning default",
+        { tag: "@team" },
+        () => {
+          // Planned: changes a choice for every team or every user, which no fixture puts back.
+          // admin creates a team
+          // admin turns the reasoning of the platform's default model off in the console section "Features"
+          // admin opens the settings section "Models" of the team and does not see "Reasoning on by default" for the platform's default model
+        },
+      );
+    },
+  );
 
-  test.describe("The model defaults keep the global override a platform admin chooses", () => {
-    test.fixme("A chosen global override is shown in the model defaults", () => {
-      // Planned: changes a choice for every team or every user, which no fixture puts back.
-      // admin sets the global override of the model defaults to the platform's default model in the console section "Features"
-      // admin sees the platform's default model as the global override in the model defaults
-    });
-  });
+  test.describe(
+    "A model's display name is the name users see",
+    { tag: "@model-discovery" },
+    () => {
+      test.fixme(
+        "A renamed model is listed under its display name in a team's models",
+        { tag: "@team" },
+        () => {
+          // Planned: a display name overwrites the one an administrator wrote.
+          // admin creates a team
+          // admin gives the platform's default model a new display name in the console section "Features"
+          // admin opens the settings section "Models" of the team and sees the model under its new display name
+        },
+      );
+    },
+  );
 
-  test.describe("Model discovery lists the models its sources offer", () => {
-    test.fixme("A refreshed discovery lists the models of its source", () => {
-      // Planned: a refresh changes the platform's list of models.
-      // admin refreshes the model discovery in the console section "Features"
-      // admin sees the discovered models of each source
-    });
-  });
+  test.describe(
+    "The model defaults keep the global override a platform admin chooses",
+    { tag: "@model-discovery" },
+    () => {
+      test.fixme("A chosen global override is shown in the model defaults", () => {
+        // Planned: changes a choice for every team or every user, which no fixture puts back.
+        // admin sets the global override of the model defaults to the platform's default model in the console section "Features"
+        // admin sees the platform's default model as the global override in the model defaults
+      });
+    },
+  );
 
-  test.describe("A platform admin dismisses a model its source no longer offers", () => {
-    test.fixme("A dismissed model is no longer listed", () => {
-      // Planned: a dismissed model cannot be put back.
-      // admin opens the model discovery in the console section "Features" and sees a model its source no longer offers
-      // admin removes that model from the list
-      // admin does not see that model among the missing models
-    });
-  });
+  test.describe(
+    "Model discovery lists the models its sources offer",
+    { tag: "@model-discovery" },
+    () => {
+      test.fixme("A refreshed discovery lists the models of its source", () => {
+        // Planned: a refresh changes the platform's list of models.
+        // admin refreshes the model discovery in the console section "Features"
+        // admin sees the discovered models of each source
+      });
+    },
+  );
 
-  test.describe("Agents without a template of their own use the platform's presentation template", () => {
-    test.fixme(
-      "An uploaded platform template is the template of a new agent",
-      { tag: "@team" },
-      () => {
-        // Planned: uploading a template replaces the platform's template.
-        // admin uploads a presentation file as the platform's presentation template in the console section "Features"
-        // admin creates a team in which admin can create agents
-        // admin opens the presentation settings of a new agent of the team and sees the platform's template
-      },
-    );
-  });
+  test.describe(
+    "A platform admin dismisses a model its source no longer offers",
+    { tag: "@model-discovery" },
+    () => {
+      test.fixme("A dismissed model is no longer listed", () => {
+        // Planned: a dismissed model cannot be put back.
+        // admin opens the model discovery in the console section "Features" and sees a model its source no longer offers
+        // admin removes that model from the list
+        // admin does not see that model among the missing models
+      });
+    },
+  );
+
+  test.describe(
+    "Agents without a template of their own use the platform's presentation template",
+    { tag: "@ppt" },
+    () => {
+      test.fixme(
+        "An uploaded platform template is the template of a new agent",
+        { tag: "@team" },
+        () => {
+          // Planned: uploading a template replaces the platform's template.
+          // admin uploads a presentation file as the platform's presentation template in the console section "Features"
+          // admin creates a team in which admin can create agents
+          // admin opens the presentation settings of a new agent of the team and sees the platform's template
+        },
+      );
+    },
+  );
 });

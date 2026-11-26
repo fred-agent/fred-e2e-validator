@@ -40,9 +40,8 @@ a file that a release of the chart can supply.
   placeholder.
 - An account chosen by the environment: a list without a fill signs in
   whichever account the environment itself chooses.
-- What an environment shows after "Disconnect" when it is not its first
-  sign-in page. `excludeTags` with `@extended` leaves out the tests that sign
-  out.
+- The switching-users test requires "Disconnect" to return to the first
+  sign-in page.
 - Other values of an account in a step, such as its email address.
 
 ## Impact

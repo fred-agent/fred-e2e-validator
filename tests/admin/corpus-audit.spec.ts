@@ -5,16 +5,18 @@
 // the corpus come from the technical console.
 import { test } from "../../e2e-framework/fixtures/test.ts";
 
-test.describe("Corpus audit", () => {
+test.describe("Corpus audit", { tag: "@admin" }, () => {
   test.describe("A platform admin sees the result of the corpus audit", () => {
-    test('A platform admin sees the audit result and "Repair documents"', async ({
-      admin,
-    }) => {
-      await test.step('admin opens the console section "Corpus audit"', () =>
-        admin.flows.openConsoleSection("Corpus audit"));
-      await test.step('admin sees that the audit found anomalies or that the stores are in sync, and "Repair documents"', () =>
-        admin.pages.corpusAudit.expectResult());
-    });
+    test(
+      'A platform admin sees the audit result and "Repair documents"',
+      { tag: "@preprod" },
+      async ({ admin }) => {
+        await test.step('admin opens the console section "Corpus audit"', () =>
+          admin.flows.openConsoleSection("Corpus audit"));
+        await test.step('admin sees that the audit found anomalies or that the stores are in sync, and "Repair documents"', () =>
+          admin.pages.corpusAudit.expectResult());
+      },
+    );
   });
 
   test.describe("A platform admin repairs the corpus", () => {

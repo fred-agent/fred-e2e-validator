@@ -2,20 +2,18 @@
 
 ### Requirement: Tests of one user
 
-A test without `@extended` SHALL use only `admin` and `member`, which may be
-one account. A test that creates a team SHALL carry `@team`. A test that
-carries neither SHALL create only in the member's personal space, and SHALL
-change no setting but the member's own. What a test creates SHALL be removed,
-and a setting it changes restored, after it.
+A test of a member's personal space SHALL create resources in that space.
+A test that creates a team SHALL carry `@team`. Teardown SHALL remove what
+the test creates and restore each preference it changes.
 
-#### Scenario: An environment with one account
+#### Scenario: A member changes their profile
 
-- **WHEN** `excludeTags` holds `@extended` and the variables of every account name one account
-- **THEN** a run holds only tests of one user, and the account's personal space and profile are as before it
+- **WHEN** a personal profile test changes a dedicated member's language
+- **THEN** teardown restores that member's previous language
 
 #### Scenario: An environment without temporary teams
 
-- **WHEN** `excludeTags` holds `@extended` and `@team`
+- **WHEN** `excludeTags` holds `@team`
 - **THEN** a run creates no team
 
 ## MODIFIED Requirements
@@ -46,8 +44,8 @@ withdraw an update, or import users into the whitelist.
 Every test file SHALL be `tests/<area>/<name>.spec.ts`, begin with a comment
 that says which part of Fred it covers and its source, and hold one
 top-level `test.describe`. Tests are grouped in a `test.describe` per rule
-of the product, and the only tags are `@smoke`, `@model`, `@ppt`, `@team`
-and `@extended`: conventions of `WRITING-TESTS.md`.
+of the product. Every file SHALL carry its section tag. Additional tag meanings
+and shared-canary eligibility are defined in `WRITING-TESTS.md`.
 
 #### Scenario: Listing the tests
 
