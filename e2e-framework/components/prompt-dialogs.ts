@@ -150,6 +150,75 @@ export class PromptView {
     await this.closeButton.click();
     await expect(this.dialog).toBeHidden();
   }
+
+  /**
+   * Expects a prompt's name, its whole text and its command, which the view
+   * shows after "/", or no command when the prompt has none, then closes the
+   * view. The view draws them together once the prompt has loaded. Only a
+   * command starts with "/": the name, the category, the labels and a text
+   * that starts with a word do not.
+   */
+  @step
+  async expectDetailAndClose(prompt: PromptContent): Promise<void> {
+    await expect(
+      this.dialog.getByText(prompt.name, { exact: true }),
+    ).toBeVisible();
+    await expect(
+      this.dialog.getByText(prompt.text, { exact: true }),
+    ).toBeVisible();
+    if (prompt.command === undefined)
+      await expect(this.dialog.getByText(/^\//)).toHaveCount(0);
+    else
+      await expect(
+        this.dialog.getByText(`/${prompt.command}`, { exact: true }),
+      ).toBeVisible();
+    await this.closeButton.click();
+    await expect(this.dialog).toBeHidden();
+  }
+}
+
+/**
+ * The "Duplicate this prompt" dialog, which a prompt card's menu opens. It
+ * starts with the source's name in "New prompt name"; "Duplicate" stays
+ * disabled until the source's detail has loaded and while the copy is saved.
+ */
+export class DuplicatePromptDialog {
+  static readonly displayName = "Duplicate prompt dialog";
+  private readonly page: Page;
+  private readonly dialog: Locator;
+  private readonly name: Locator;
+  private readonly duplicate: Locator;
+
+  constructor(page: Page) {
+    this.page = page;
+    this.dialog = page.getByRole("dialog", {
+      name: "Duplicate this prompt",
+      exact: true,
+    });
+    this.name = this.dialog.getByRole("textbox", {
+      name: "New prompt name",
+      exact: true,
+    });
+    this.duplicate = this.dialog.getByRole("button", {
+      name: "Duplicate",
+      exact: true,
+    });
+  }
+
+  /**
+   * Once the dialog shows the source's name, names the copy, waits for
+   * "Duplicate" to be enabled with that name and clicks it once; the dialog
+   * then closes.
+   */
+  @step
+  async submit(source: string, copy: string): Promise<void> {
+    await expect(this.name).toHaveValue(source);
+    await this.name.fill(copy);
+    await expect(this.name).toHaveValue(copy);
+    await expect(this.duplicate).toBeEnabled();
+    await this.duplicate.click();
+    await expect(this.dialog).toBeHidden();
+  }
 }
 
 /**

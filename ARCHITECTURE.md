@@ -242,6 +242,14 @@ prompts page; a setting is restored through the page that changed it.
   `testData`, in a personal space or a team, and records what `duplicate`,
   `copy` and `importFromMarketplace` create as it records what `create`
   does. An agent published to the marketplace goes with its removal.
+  `prompts` records the copy `duplicate` names before it confirms the
+  dialog; an unconfirmed copy is deleted if the space lists it.
+- `personalAgent` creates agents only as `member` in the space of
+  `testData`, with `create(word)`, which the test calls after setup. It
+  hands creation and removal to one `Agents`. It depends on
+  no other factory fixture and opens the member's user at the first
+  creation, so a test can pair it with `prompts`, and so with `teams`,
+  within three factory fixtures, where `agents` would bring `folders` too.
 - `preferences` and `agents.sort` read a setting before they change it and
   record its restoration first. The restoration chooses the value again,
   goes to another page of Fred, which keeps the page while Fred saves the
@@ -264,7 +272,8 @@ prompts page; a setting is restored through the page that changed it.
 - **Order.** `folders`, `agents` and `prompts` depend on `teams`, and
   `agents` on `folders`, so Playwright tears a folder down before its team
   ([fixtures](https://playwright.dev/docs/test-fixtures)): a folder's
-  removal needs the team to reach the folder.
+  removal needs the team to reach the folder. `personalAgent` depends on
+  none: its agents are in the test data's space and use no folder.
 - **The test's part ends first.** Before its first removal a factory closes
   the contexts of the test's users. The body of a test that timed out or was
   cancelled goes on beside the teardown, and could create a thing after its

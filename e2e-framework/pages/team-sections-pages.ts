@@ -13,6 +13,19 @@ const DESCRIPTION_LIMIT = 500;
 /** A period above every platform's cap. */
 const PERIOD_ABOVE_CAP = "P99999D";
 
+/**
+ * A name typed in the name field and never submitted. A temporary team's name
+ * ends with a stamp, so this name differs from it.
+ */
+const DRAFT_NAME = "e2e draft name";
+
+/** A valid description other than the one a temporary team is created with. */
+const NEW_DESCRIPTION =
+  "A description saved while a new team name is still a draft.";
+
+/** The new description with spaces around it, which saving trims. */
+const PADDED_DESCRIPTION = `   ${NEW_DESCRIPTION}   `;
+
 /** A team's "Settings" section: its name, description, visibility and retention. */
 export class TeamParametersPage {
   static readonly displayName = "Team parameters page";
@@ -21,6 +34,7 @@ export class TeamParametersPage {
   private readonly teamName: Locator;
   private readonly description: Locator;
   private readonly descriptionLimit: Locator;
+  private readonly descriptionUpdated: Locator;
   // The first of the two periods; both fields have this name.
   private readonly gracePeriod: Locator;
   private readonly aboveCap: Locator;
@@ -42,6 +56,11 @@ export class TeamParametersPage {
     this.descriptionLimit = main.getByText(
       `${DESCRIPTION_LIMIT} characters maximum`,
     );
+    // The confirmation shown once a description is saved, found on the whole
+    // page, as it may show outside the main region.
+    this.descriptionUpdated = page.getByText("Team description updated", {
+      exact: true,
+    });
     this.gracePeriod = main
       .getByRole("textbox", { name: "Team value", exact: true })
       .first();
@@ -93,6 +112,50 @@ export class TeamParametersPage {
   async expectDescriptionCut(): Promise<void> {
     await expect(this.description).toHaveValue("x".repeat(DESCRIPTION_LIMIT));
     await expect(this.descriptionLimit).toBeVisible();
+  }
+
+  /**
+   * Types a different name in the name field. The rename is sent only by its
+   * own button, which this leaves untouched.
+   */
+  @step
+  async typeDraftName(): Promise<void> {
+    await this.teamName.fill(DRAFT_NAME);
+    await expect(this.teamName).toHaveValue(DRAFT_NAME);
+  }
+
+  /** Expects the name field to still hold the name typed but not submitted. */
+  @step
+  async expectDraftName(): Promise<void> {
+    await expect(this.teamName).toHaveValue(DRAFT_NAME);
+  }
+
+  /**
+   * Writes the new description with spaces around it, then takes the focus
+   * off the field once, which saves it.
+   */
+  @step
+  async writePaddedDescriptionAndLeave(): Promise<void> {
+    await this.description.fill(PADDED_DESCRIPTION);
+    await expect(this.description).toHaveValue(PADDED_DESCRIPTION);
+    await this.description.blur();
+  }
+
+  /**
+   * Expects the confirmation of the saved description, then the field to
+   * hold the description trimmed, as the team loaded again after the save
+   * supplies it.
+   */
+  @step
+  async expectDescriptionUpdated(): Promise<void> {
+    await expect(this.descriptionUpdated).toBeVisible();
+    await expect(this.description).toHaveValue(NEW_DESCRIPTION);
+  }
+
+  /** Expects the new description, trimmed, in the description field. */
+  @step
+  async expectNewDescription(): Promise<void> {
+    await expect(this.description).toHaveValue(NEW_DESCRIPTION);
   }
 
   /** Sets a deletion grace period above the platform cap and leaves the field. */

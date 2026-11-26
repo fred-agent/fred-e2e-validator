@@ -1,6 +1,7 @@
 // The prompts of one test. `create` makes a prompt of a space through the
-// prompts page; the fixture's teardown deletes each prompt in a browser
-// context of its own opened as the account that created it.
+// prompts page and `duplicate` copies one there; the fixture's teardown
+// deletes each prompt in a browser context of its own opened as the account
+// that created it.
 import type { AccountName } from "../config/accounts.ts";
 import type { Space } from "../config/test-data.ts";
 import type { Removal } from "./test.ts";
@@ -69,6 +70,25 @@ export class Prompts {
     await user.flows.openPrompts(space);
     recorded.inFred = "not known";
     await user.pages.prompts.create(recorded.prompt);
+    recorded.inFred = "yes";
+    return recorded.prompt;
+  }
+
+  /**
+   * Records the copy, then duplicates a prompt as the user from its card in
+   * its space under a new name. The copy holds the prompt's text, as the
+   * caller passes it, and no command. The copy is newer than the source, so
+   * its removal comes first.
+   */
+  async duplicate(user: User, prompt: Prompt, word: string): Promise<Prompt> {
+    const recorded = this.record(user, {
+      space: prompt.space,
+      name: this.options.uniqueName(word),
+      text: prompt.text,
+    });
+    await user.flows.openPrompts(prompt.space);
+    recorded.inFred = "not known";
+    await user.pages.prompts.duplicate(prompt.name, recorded.prompt.name);
     recorded.inFred = "yes";
     return recorded.prompt;
   }

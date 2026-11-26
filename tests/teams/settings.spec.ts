@@ -234,6 +234,31 @@ test.describe("Team settings", { tag: "@team" }, () => {
     );
   });
 
+  test.describe("A team's description is saved apart from its name", () => {
+    test(
+      "Saving the description keeps a name typed but not yet saved",
+      { tag: "@preprod" },
+      async ({ admin }) => {
+        await test.step('admin opens the settings section "Settings" of the team', () =>
+          admin.flows.openTeamSettings(team, "Settings"));
+        await test.step('admin types a different name in "Team name" without renaming the team', () =>
+          admin.pages.teamParameters.typeDraftName());
+        await test.step('admin writes a new description with spaces around it in "Team description" and leaves the field', () =>
+          admin.pages.teamParameters.writePaddedDescriptionAndLeave());
+        await test.step('admin sees "Team description updated" and the new description without its surrounding spaces', () =>
+          admin.pages.teamParameters.expectDescriptionUpdated());
+        await test.step('admin still sees the different name in "Team name"', () =>
+          admin.pages.teamParameters.expectDraftName());
+        await test.step('admin opens the settings section "Settings" of the team again', () =>
+          admin.flows.openTeamSettings(team, "Settings"));
+        await test.step('admin sees the team\'s name in "Team name"', () =>
+          admin.pages.teamParameters.expectName(team.name));
+        await test.step('admin sees the new description in "Team description"', () =>
+          admin.pages.teamParameters.expectNewDescription());
+      },
+    );
+  });
+
   test.describe("A team's retention stays under the platform cap", () => {
     test(
       "A value above the cap is refused",

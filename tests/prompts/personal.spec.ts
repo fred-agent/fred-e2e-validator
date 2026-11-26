@@ -1,8 +1,8 @@
 // Personal prompts: a member keeps reusable prompts in their personal space:
-// they create, edit and delete them, find them by search and favorites, and
-// give them a command. Source: Help Center, "Prompts" and "Commands";
-// the new prompt form, whose "Create" needs a name and a prompt text, comes
-// from the prompts page.
+// they create, edit, duplicate and delete them, find them by search and
+// favorites, and give them a command. Source: Help Center, "Prompts" and
+// "Commands"; the new prompt form, whose "Create" needs a name and a prompt
+// text, and the duplicate dialog come from the prompts page.
 import { test } from "../../e2e-framework/fixtures/test.ts";
 
 test.describe("Personal prompts", { tag: "@prompt" }, () => {
@@ -83,6 +83,37 @@ test.describe("Personal prompts", { tag: "@prompt" }, () => {
           await member.flows.openPrompts(testData.space);
           await member.pages.prompts.expectNotListed(prompt.name);
         });
+      },
+    );
+  });
+
+  test.describe("A member duplicates their prompts", () => {
+    test(
+      "A duplicate holds the whole text without a command, which stays with the original",
+      { tag: "@preprod" },
+      async ({ member, prompts, testData }) => {
+        // Longer than a card shows, with its own ending; it starts with a word.
+        const text =
+          "Read the whole document, list each of its sections with the main point it makes, note every date, name and figure it gives, compare its conclusion with its introduction, and finish your answer with the words end of the full prompt text.";
+        const created =
+          await test.step("member creates a prompt with a command in the test space", () =>
+            prompts.create(member, testData.space, "prompt source", {
+              command: true,
+            }));
+        const source =
+          await test.step("member changes the text of the prompt to a text longer than its card shows", async () => {
+            await member.pages.prompts.replaceText(created, text);
+            return { ...created, text };
+          });
+        const copy =
+          await test.step("member reopens the prompts of the test space and duplicates the prompt from its card under a new name", () =>
+            prompts.duplicate(member, source, "prompt copy"));
+        await test.step("member opens the prompts of the test space again, opens the copy and sees its name and whole text without a command", async () => {
+          await member.flows.openPrompts(testData.space);
+          await member.pages.prompts.expectDetail(copy);
+        });
+        await test.step("member opens the prompt and sees its name, its whole text and its command", () =>
+          member.pages.prompts.expectDetail(source));
       },
     );
   });

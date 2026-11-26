@@ -34,12 +34,19 @@ export class ChatPage {
   // The toggles on the conversation's side rail, and the panels they open.
   private readonly panelToggles: Readonly<Record<ChatPanel, Locator>>;
   private readonly panels: Readonly<Record<ChatPanel, Locator>>;
+  // A text editor, not an input, with the command menu's combobox role: its
+  // text is its content.
+  private readonly composer: Locator;
 
   constructor(page: Page) {
     this.page = page;
     const main = page.getByRole("main");
     this.conversation = main.getByRole("region", {
       name: "Conversation",
+      exact: true,
+    });
+    this.composer = main.getByRole("combobox", {
+      name: "Ask your question, or type / for a command",
       exact: true,
     });
     this.chatActions = main.getByRole("button", {
@@ -99,6 +106,29 @@ export class ChatPage {
     const panel = this.panels[label];
     await this.panelToggles[label].click();
     await expect(panel).toBeVisible();
+    await this.closePanel(panel);
+  }
+
+  /**
+   * Opens "Prompt library", expects a prompt among those it lists, by the
+   * exact text of its name, as a row also holds the prompt's description,
+   * and closes the panel without choosing a prompt.
+   */
+  @step
+  async expectPromptInLibrary(name: string): Promise<void> {
+    const panel = this.panels["Prompt library"];
+    await this.panelToggles["Prompt library"].click();
+    await expect(panel.getByText(name, { exact: true })).toBeVisible();
+    await this.closePanel(panel);
+  }
+
+  /** Expects the composer to hold no text. */
+  @step
+  async expectComposerEmpty(): Promise<void> {
+    await expect(this.composer).toHaveText("");
+  }
+
+  private async closePanel(panel: Locator): Promise<void> {
     await panel
       .getByRole("button", { name: "Close panel", exact: true })
       .click();

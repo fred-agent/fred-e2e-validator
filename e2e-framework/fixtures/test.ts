@@ -1,8 +1,9 @@
 // The test the test files import, with its fixtures: the worker's account
 // set, test data and storage states; the users `admin`, `member`,
 // `secondUser`, `outsider` and `visitor`; and the factory fixtures `teams`,
-// `folders`, `agents`, `prompts` and `preferences`, which remove what they
-// create, and restore what they change, in their own teardown.
+// `folders`, `agents`, `personalAgent`, `prompts` and `preferences`, which
+// remove what they create, and restore what they change, in their own
+// teardown.
 import { stripVTControlCharacters } from "node:util";
 import { test as base, type TestInfo } from "@playwright/test";
 import { AccountSet, type AccountName } from "../config/accounts.ts";
@@ -13,7 +14,7 @@ import {
 } from "../config/settings.ts";
 import { loadTestData, type TestData } from "../config/test-data.ts";
 import { PAGE_AT_FAILURE, REMOVAL_FAILED } from "../reporting/run-log.ts";
-import { Agents } from "./agents.ts";
+import { Agents, type Agent } from "./agents.ts";
 import { Folders } from "./folders.ts";
 import { Preferences } from "./preferences.ts";
 import { Prompts } from "./prompts.ts";
@@ -80,6 +81,8 @@ type TestFixtures = {
   teams: Teams;
   folders: Folders;
   agents: Agents;
+  /** Agents of `member` in the test data's space only, with no other factory fixture. */
+  personalAgent: Readonly<{ create: (word: string) => Promise<Agent> }>;
   prompts: Prompts;
   preferences: Preferences;
 };
@@ -299,6 +302,23 @@ export const test = base.extend<TestFixtures, WorkerFixtures>({
       const agents = new Agents({ testData, uniqueName: name });
       const setupMs = performance.now() - setupStart;
       await use(agents);
+      await removeEach(() => agents.removals(), testUsers, testInfo, setupMs);
+    },
+    { timeout: FACTORY_FIXTURE_TIMEOUT },
+  ],
+  // Depends on no other factory fixture: its agents belong to the test data's
+  // space, which no fixture removes, and are restricted to no folder. The
+  // member's user opens at the test's first `create`, after setup, so a
+  // failed creation still reaches this teardown.
+  personalAgent: [
+    async ({ testUsers, testData, uniqueName: name }, use, testInfo) => {
+      const setupStart = performance.now();
+      const agents = new Agents({ testData, uniqueName: name });
+      const setupMs = performance.now() - setupStart;
+      await use({
+        create: async (word) =>
+          agents.create(await testUsers.user("member"), testData.space, word),
+      });
       await removeEach(() => agents.removals(), testUsers, testInfo, setupMs);
     },
     { timeout: FACTORY_FIXTURE_TIMEOUT },

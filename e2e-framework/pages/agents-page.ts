@@ -321,6 +321,23 @@ export class AgentsPage {
   }
 
   /**
+   * Loads the page again, expects a new agent's form, from a template, to
+   * show one capability and then not to show another, and closes the form
+   * unsaved.
+   */
+  @step
+  async reloadAndExpectCapabilityAbsentForNewAgent(
+    template: string,
+    missing: AgentCapability,
+    listed: AgentCapability,
+  ): Promise<void> {
+    await this.reloadAndOpenNewAgentCapabilities(template);
+    await this.form.expectCapabilityListed(listed);
+    await this.form.expectCapabilityNotListed(missing);
+    await this.form.close();
+  }
+
+  /**
    * Enable a capability that is currently off and wait for the form to close
    * after saving.
    */

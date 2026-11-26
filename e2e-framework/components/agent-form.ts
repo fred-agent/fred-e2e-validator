@@ -15,7 +15,8 @@ export type AgentCapability =
   | "Access to the team wiki"
   | "Generate a Word document"
   | "Generate a presentation"
-  | "Generate a web page (HTML/CSS)";
+  | "Generate a web page (HTML/CSS)"
+  | "Fill in a PowerPoint document";
 
 /** A capability the "Advanced" view adds, by its title. */
 export type AdvancedCapability = "Search documents by label";

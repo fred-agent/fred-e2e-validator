@@ -97,6 +97,42 @@ test.describe("Managing documents", { tag: "@document" }, () => {
     },
   );
 
+  test.describe(
+    "A member processes a stored document from its row",
+    { tag: "@csv" },
+    () => {
+      test(
+        'A pending CSV file processed from its row reaches "Done" and shows its content',
+        { tag: "@preprod" },
+        async ({ member, folders, testData }) => {
+          test.setTimeout(PROCESSING_TIMEOUT + 120_000);
+          const folder =
+            await test.step("member creates a folder in the test space", () =>
+              folders.create(member, testData.space, "manage"));
+          await test.step('member uploads "e2e-table.csv" into the folder without processing', async () => {
+            await member.flows.openFolder(folder);
+            await member.pages.resources.upload("e2e-table.csv", "Upload only");
+          });
+          await test.step('member sees "e2e-table.csv" with the status "Pending"', () =>
+            member.pages.resources.expectStatus("e2e-table.csv", "Pending"));
+          await test.step('member chooses "Relaunch ingestion" for "e2e-table.csv" and sees "Ingestion relaunched"', () =>
+            member.pages.resources.relaunchIngestion("e2e-table.csv"));
+          await test.step('member waits until Fred ends the processing of "e2e-table.csv"', () =>
+            member.pages.resources.expectProcessingEnded("e2e-table.csv"));
+          await test.step('member sees "e2e-table.csv" with the status "Done"', () =>
+            member.pages.resources.expectStatus("e2e-table.csv", "Done"));
+          await test.step('member opens the preview of "e2e-table.csv"', () =>
+            member.pages.resources.preview("e2e-table.csv"));
+          await test.step('member sees "Alderford" in the preview of "e2e-table.csv"', () =>
+            member.pages.resources.expectPreviewText(
+              "e2e-table.csv",
+              "Alderford",
+            ));
+        },
+      );
+    },
+  );
+
   test.describe("A member finds a document by searching the folder", () => {
     let folder: Folder;
 

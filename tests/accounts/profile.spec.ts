@@ -31,6 +31,28 @@ test.describe("Profile", { tag: "@account" }, () => {
           member.pages.home.expectShown());
       },
     );
+
+    test(
+      "A member who leaves their profile opened from the prompts sees the same prompts again",
+      { tag: "@preprod" },
+      async ({ member, testData }) => {
+        const address =
+          await test.step("member opens the prompts of the test space and remembers their address", async () => {
+            await member.flows.openPrompts(testData.space);
+            return member.pages.prompts.rememberAddress();
+          });
+        await test.step("member opens their profile from the account menu of the prompts", async () => {
+          await member.pages.accountMenu.openProfile();
+          await member.pages.profile.expectShown();
+        });
+        await test.step('member leaves their profile with "Back"', () =>
+          member.pages.profile.leave());
+        await test.step('member is back at the address of the prompts and sees "Create prompt"', async () => {
+          await member.pages.prompts.expectBackAt(address);
+          await member.pages.prompts.expectButtonVisible("Create prompt");
+        });
+      },
+    );
   });
 
   test.describe("The profile shows the interface settings", () => {

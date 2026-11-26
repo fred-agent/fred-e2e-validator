@@ -62,6 +62,7 @@ export class ResourcesPage {
   private readonly importsPanel: Locator;
   private readonly dropRefused: Locator;
   private readonly filesSkipped: Locator;
+  private readonly ingestionRelaunched: Locator;
   private readonly buttons: Readonly<Record<ResourcesButton, Locator>>;
   private readonly table: ResourceTable;
   private readonly documents: DocumentList;
@@ -122,6 +123,11 @@ export class ResourcesPage {
       .getByRole("alert")
       .filter({ hasText: "Drop a folder" });
     this.filesSkipped = page.getByText(/^\d+ files? (was|were) skipped: /);
+    // The confirmation once the processing of one document has started again,
+    // found on the whole page, as it may show outside the main region.
+    this.ingestionRelaunched = page.getByText("Ingestion relaunched", {
+      exact: true,
+    });
     this.buttons = {
       "New folder": this.newFolder,
       "Add files": this.addFiles,
@@ -379,6 +385,29 @@ export class ResourcesPage {
   async uploadAndProcess(file: UploadFile): Promise<void> {
     await this.uploadForProcessing(file);
     await this.table.expectStatus(file, "Done");
+  }
+
+  /**
+   * Starts the processing of a stored document of the open folder from its
+   * row's "More actions", with the processing profile stored with it, and
+   * waits for the confirmation that it started.
+   */
+  @step
+  async relaunchIngestion(name: string): Promise<void> {
+    await this.table.choose(name, "Relaunch ingestion");
+    await expect(
+      this.ingestionRelaunched,
+      `No "Ingestion relaunched" confirmation followed "Relaunch ingestion" for the document "${name}"`,
+    ).toBeVisible();
+  }
+
+  /**
+   * Waits for a document of the open folder to reach "Done" or "Error" within
+   * the processing timeout. The caller checks which outcome it expects.
+   */
+  @step
+  async expectProcessingEnded(name: string): Promise<void> {
+    await this.table.expectProcessingEnded(name, PROCESSING_TIMEOUT);
   }
 
   /** Expects a document of the open folder with a status, such as "Pending". */

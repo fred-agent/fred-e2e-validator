@@ -22,7 +22,8 @@ export type RowAction =
   | "Download"
   | "Rename"
   | "Exclude from search"
-  | "Include in search";
+  | "Include in search"
+  | "Relaunch ingestion";
 
 /**
  * The folder and document table of a resources page, a data table whose rows

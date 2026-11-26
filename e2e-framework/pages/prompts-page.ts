@@ -2,6 +2,7 @@ import { expect, type Locator, type Page } from "@playwright/test";
 import { ConfirmDialog } from "../components/dialogs.ts";
 import {
   CategoriesDialog,
+  DuplicatePromptDialog,
   PromptForm,
   PromptView,
   type PromptContent,
@@ -13,7 +14,7 @@ import { step } from "./step.ts";
 export type PromptsButton = "Create prompt";
 
 /** The options of a prompt card's menu that the page object chooses. */
-type PromptAction = "Edit" | "Delete";
+type PromptAction = "Edit" | "Duplicate" | "Delete";
 
 /** The address of a space's prompts. */
 const PROMPTS_ADDRESS = /\/team\/[^/]+\/prompts$/;
@@ -40,6 +41,7 @@ export class PromptsPage {
   private readonly categories: CategoriesDialog;
   private readonly form: PromptForm;
   private readonly view: PromptView;
+  private readonly duplicateDialog: DuplicatePromptDialog;
   private readonly confirmDialog: ConfirmDialog;
 
   constructor(page: Page) {
@@ -72,6 +74,7 @@ export class PromptsPage {
     this.categories = new CategoriesDialog(page);
     this.form = new PromptForm(page);
     this.view = new PromptView(page);
+    this.duplicateDialog = new DuplicatePromptDialog(page);
     this.confirmDialog = new ConfirmDialog(page);
   }
 
@@ -112,6 +115,32 @@ export class PromptsPage {
   @step
   async expectButtonVisible(name: PromptsButton): Promise<void> {
     await expectButtonVisible(this.buttons[name]);
+  }
+
+  /**
+   * Remembers the exact address of the prompts shown, once their list is
+   * drawn. The returned function tells whether the browser is at that
+   * address now; the address, which holds a space's identifier, stays in it.
+   */
+  @step
+  async rememberAddress(): Promise<() => boolean> {
+    await this.expectListDrawn();
+    const address = this.page.url();
+    return () => this.page.url() === address;
+  }
+
+  /**
+   * Expects the browser back at a remembered address, exactly, and the
+   * prompts' list drawn there. The message names neither address.
+   */
+  @step
+  async expectBackAt(isAtAddress: () => boolean): Promise<void> {
+    await expect
+      .poll(isAtAddress, {
+        message: "The browser is not back at the address of the prompts",
+      })
+      .toBe(true);
+    await this.expectListDrawn();
   }
 
   /** Opens "Manage categories", expects the category manager and closes it unsaved. */
@@ -166,6 +195,27 @@ export class PromptsPage {
   async expectText(name: string, text: string): Promise<void> {
     await this.card(name).click();
     await this.view.expectAndClose(name, text);
+  }
+
+  /**
+   * Opens a prompt from its card, expects its name, its whole text and its
+   * command, or no command when it has none, and closes it.
+   */
+  @step
+  async expectDetail(prompt: PromptContent): Promise<void> {
+    await this.card(prompt.name).click();
+    await this.view.expectDetailAndClose(prompt);
+  }
+
+  /**
+   * Duplicates a prompt from its card's menu under a new name; the dialog
+   * closes and the page lists the copy.
+   */
+  @step
+  async duplicate(name: string, copy: string): Promise<void> {
+    await this.choose(name, "Duplicate");
+    await this.duplicateDialog.submit(name, copy);
+    await this.expectListed(copy);
   }
 
   /** Deletes a prompt; its card disappears. */
