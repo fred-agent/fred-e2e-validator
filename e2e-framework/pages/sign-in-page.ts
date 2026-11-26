@@ -3,9 +3,14 @@ import {
   firstElement,
   lastElement,
   SignInActions,
+  stepElement,
 } from "../components/sign-in-actions.ts";
 import type { Account } from "../config/accounts.ts";
-import { readSignInSteps, type SignInSteps } from "../config/sign-in-steps.ts";
+import {
+  isOptional,
+  readSignInSteps,
+  type SignInSteps,
+} from "../config/sign-in-steps.ts";
 import { SIGN_IN_FAILED, SIGN_IN_NOT_SHOWN } from "../reporting/run-log.ts";
 import { step } from "./step.ts";
 import { FRED_START_TIMEOUT } from "./waits.ts";
@@ -40,6 +45,11 @@ export class SignInPage {
   async signIn(account: Account): Promise<void> {
     const { actions } = this;
     for (const signInStep of this.steps) {
+      if (
+        isOptional(signInStep) &&
+        !(await stepElement(this.page, signInStep).isVisible())
+      )
+        continue;
       if ("click" in signInStep) await actions.click(signInStep.click);
       else await actions.fill(signInStep.fill, signInStep.with, account);
     }

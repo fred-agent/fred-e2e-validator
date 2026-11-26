@@ -122,10 +122,11 @@ The committed file describes Keycloak's own form:
 ]
 ```
 
-| Step                              | Does                                                                                               |
-| --------------------------------- | -------------------------------------------------------------------------------------------------- |
-| `{ "click": text }`               | Clicks the button or the link with this name                                                       |
-| `{ "fill": text, "with": value }` | Fills the field with this label or placeholder; `value` is `username` or `password`, the account's |
+| Step                                 | Does                                                                                                                     |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------ |
+| `{ "click": text }`                  | Clicks the button or the link with this name                                                                             |
+| `{ "click": text, "ifShown": true }` | At the start of the list only: clicks it when the first page shows it, such as an account picker's "Use another account" |
+| `{ "fill": text, "with": value }`    | Fills the field with this label or placeholder; `value` is `username` or `password`, the account's                       |
 
 A text is the whole text, with its capitals. The name of a button or a link
 is its [accessible name](https://playwright.dev/docs/locators#locate-by-role),

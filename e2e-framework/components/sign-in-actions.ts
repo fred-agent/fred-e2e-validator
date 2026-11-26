@@ -2,6 +2,7 @@ import type { Locator, Page } from "@playwright/test";
 import type { Account } from "../config/accounts.ts";
 import {
   lastStep,
+  leadingOptional,
   type AccountChoice,
   type AccountValue,
   type SignInStep,
@@ -26,9 +27,24 @@ function elementOf(page: Page, signInStep: SignInStep): Locator {
     .filter({ visible: true });
 }
 
-/** Visible once the first sign-in page has loaded. */
+/**
+ * Visible once the first sign-in page has loaded: the element of the first
+ * step, or of an optional step before it, such as an account picker's.
+ */
 export function firstElement(page: Page, steps: SignInSteps): Locator {
-  return elementOf(page, steps[0]);
+  const optional = leadingOptional(steps);
+  const required = steps[optional.length] ?? steps[0];
+  return optional
+    .reduce(
+      (element, step) => element.or(elementOf(page, step)),
+      elementOf(page, required),
+    )
+    .first();
+}
+
+/** The element of a step, for a check of whether the page shows it. */
+export function stepElement(page: Page, signInStep: SignInStep): Locator {
+  return elementOf(page, signInStep);
 }
 
 /** Visible while the last sign-in page is open, as when it refuses the account. */

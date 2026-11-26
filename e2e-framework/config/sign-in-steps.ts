@@ -13,11 +13,11 @@ const text = z.string().trim().min(1);
 const accountValue = z.enum(["username", "password"]);
 
 const STEP = z.union([
-  z.strictObject({ click: text }),
+  z.strictObject({ click: text, ifShown: z.literal(true).optional() }),
   z.strictObject({ fill: text, with: accountValue }),
 ]);
 const STEP_FORM =
-  "a step is a click with a text, or a fill with a text and a with of username or password";
+  "a step is a click with a text and an optional ifShown of true, or a fill with a text and a with of username or password";
 
 const LIST_FORM = "the file must hold a list of at least one step";
 
@@ -28,11 +28,35 @@ const STEPS = z
   .refine(
     (steps) => "click" in lastStep(steps),
     "the last step must be a click",
+  )
+  .refine(
+    (steps) =>
+      steps
+        .slice(leadingOptional(steps).length)
+        .every((step) => !isOptional(step)),
+    "a step with ifShown comes before every other step",
+  )
+  .refine(
+    (steps) => leadingOptional(steps).length < steps.length,
+    "the list needs a step without ifShown",
   );
 
 export type AccountValue = z.infer<typeof accountValue>;
 export type SignInStep = Readonly<z.infer<typeof STEP>>;
 export type SignInSteps = readonly [SignInStep, ...SignInStep[]];
+
+/** A click that is carried out only when its button or link shows, such as an account picker's. */
+export function isOptional(step: SignInStep): boolean {
+  return "click" in step && step.ifShown === true;
+}
+
+/** The optional steps the list starts with. */
+export function leadingOptional(
+  steps: readonly SignInStep[],
+): readonly SignInStep[] {
+  const end = steps.findIndex((step) => !isOptional(step));
+  return end === -1 ? steps : steps.slice(0, end);
+}
 
 export function lastStep(steps: SignInSteps): SignInStep {
   return steps.reduce((_earlier, step) => step);
