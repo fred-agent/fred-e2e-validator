@@ -23,8 +23,9 @@ the sign-in pages that `sign-in.json` describes. Each account has a role:
 | `secondUser` | A second user with no platform role                                 |
 | `outsider`   | A user never added to any team                                      |
 
-The full suite and the shared-canary selection (`@preprod`) use four
-separate accounts, one for each name.
+Four separate accounts, one for each name, run every test. One platform
+administrator standing for all four names runs the
+[single-account selection](#single-account-selection).
 
 ### In the identity provider (Microsoft Entra ID)
 
@@ -84,7 +85,8 @@ ACCOUNT_OUTSIDER_EMAIL=
 
 `_USERNAME` is what the sign-in page takes (the UPN for Entra) and what
 Fred's user picker shows in parentheses; `_EMAIL` the address Fred's account
-menu shows. Each group holds a separate account.
+menu shows. Each group holds a separate account, or the same platform
+administrator in all four groups for the single-account selection.
 
 ## 2. The run folder
 
@@ -100,7 +102,7 @@ It holds `e2e.env` and three files mounted over the image's own.
 {
   "fredBaseUrl": "<fred-url>",
   "workers": 1,
-  "browser": "chromium",
+  "browser": "msedge",
   "testTimeout": 120000,
   "expectTimeout": 15000,
   "factoryFixtureTimeout": 120000,
@@ -109,6 +111,8 @@ It holds `e2e.env` and three files mounted over the image's own.
 ```
 
 `excludeTags`: `@model` leaves out the tests that call a language model.
+`browser`: `msedge`, the default, runs Microsoft Edge Stable from the image;
+`chromium` is the alternative.
 
 `sign-in.json`, the steps of the sign-in pages. The browser of the tests is
 in English, so Microsoft's pages are too, whatever the tenant's language:
@@ -180,6 +184,21 @@ run tests/home/sections.spec.ts              # 1. sign-in and the home page
 run tests/accounts/switch-users.spec.ts      # 2. sign-out and sign-in again
 run                                          # 3. the whole suite
 ```
+
+### Single-account selection
+
+With one platform administrator in all four groups of `e2e.env`, add
+`"@multi-user"` to `excludeTags` in `env-config.json`, keep `"workers": 1`,
+and run the shared-canary cases only:
+
+```bash
+run --grep @preprod --list --reporter=list   # preview the selection
+run --grep @preprod
+```
+
+`@multi-user` leaves out the cases that need two distinct people, such as
+switching users or a team with a second member. Keep `--grep @preprod`: the
+other tests are not classified for one account.
 
 - The command replaces the image's default, the run page's service, with
   one Playwright run. Arguments after `run` go to `playwright test`, such as
