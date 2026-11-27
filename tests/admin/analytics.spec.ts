@@ -43,7 +43,7 @@ test.describe("Platform analytics", { tag: "@admin" }, () => {
   test.describe("The analytics a user sees depend on their role", () => {
     test(
       "A team admin does not see the platform's analytics",
-      { tag: ["@team", "@preprod"] },
+      { tag: ["@team", "@preprod", "@multi-user"] },
       async ({ teams, secondUser }) => {
         await test.step('admin creates a team with secondUser as a member with the role "Admin"', () =>
           teams.create("analytics", {

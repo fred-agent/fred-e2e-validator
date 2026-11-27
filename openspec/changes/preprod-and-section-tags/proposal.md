@@ -8,7 +8,8 @@ format a test covers.
 
 - Add an explicit `@preprod` selection for reviewed automated cases.
 - Tag cases by section or feature and retain the quick sign-in check under
-  `@smoke`. Remove the account-count classification and its default exclusion.
+  `@smoke`. Mark shared-canary cases that require distinct users with
+  `@multi-user`. Each environment chooses its exclusions.
 - Document how to select the shared-canary cases and which dedicated accounts
   the selection needs.
 

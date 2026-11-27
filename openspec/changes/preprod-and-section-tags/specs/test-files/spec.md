@@ -10,6 +10,16 @@ writes to dedicated accounts' profiles and personal spaces and resources owned
 by the test. It SHALL leave other users' resources, memberships and permissions
 and platform settings alone throughout the run.
 
+Each `@preprod` case that requires distinct users during setup, execution,
+assertions or cleanup SHALL also carry `@multi-user` on its declaration
+or parameter row.
+
+#### Scenario: One platform administrator runs the shared-canary selection
+
+- **WHEN** the run profile excludes `@multi-user` and the operator selects `@preprod`
+- **THEN** the selection contains every reviewed case that can exercise its rule using one dedicated platform administrator
+- **AND** a reviewed case whose shared setup adds a different user to a temporary team is excluded
+
 #### Scenario: Selecting cases for a shared environment
 
 - **WHEN** an operator selects only `@preprod` on the run page

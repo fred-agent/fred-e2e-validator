@@ -61,8 +61,9 @@ environment keep their values.
 Account set 1 serves the first worker, set 2 the second, and so on: a run of
 two workers needs sets 1 and 2. Global setup stops before a browser starts
 if either set is incomplete. Give each worker its own set of dedicated
-accounts. The full suite and the shared-canary selection use distinct
-accounts for `admin`, `member`, `secondUser` and `outsider`. An account's
+accounts. Running every `@preprod` case requires distinct accounts for
+`admin`, `member`, `secondUser` and `outsider`. With one platform administrator,
+use the [single-account shared-canary selection](#shared-canary). An account's
 language is English and it has no profile picture; a test that changes
 either puts it back. A setting the account never chose, such as its theme,
 is chosen afterwards with the value it had, as Fred's pages cannot undo a
@@ -215,11 +216,19 @@ another tag also selects every automated case that carries that tag.
 The default `excludeTags` is empty. A run with no selection includes cases
 outside the shared-canary set.
 
-For installations that used one account for every role, provision distinct
-dedicated accounts and remove the obsolete account-count exclusion from the
-deployment configuration. The unfiltered suite includes cases that compare
-two users. With one identity for every role, select individual files whose
-fixtures use only that identity, such as `tests/home/sections.spec.ts`.
+With **one dedicated platform administrator**, use the same account in all
+four unsuffixed role slots in `.env`. In your local `env-config.json`, set
+`"workers": 1` and add `"@multi-user"` to `excludeTags`. The other settings
+stay as configured. Preview or run the selection:
+
+```bash
+npx playwright test --grep @preprod --list --reporter=list
+npx playwright test --grep @preprod
+```
+
+The exclusion drops shared-canary cases that need distinct people, including
+cases whose setup adds a second user to a team. Keep `--grep @preprod`:
+the account requirement has been classified for the shared-canary selection.
 
 Set `space` in `test-data/test-data.json` to the dedicated accounts' personal
 space and give each active worker exclusive use of its account set. These

@@ -139,7 +139,7 @@ test.describe("Team settings", { tag: "@team" }, () => {
   test.describe("The console's invitation links let people join the team", () => {
     test(
       "A user who follows one of the console's invitation links joins the team",
-      { tag: "@preprod" },
+      { tag: ["@preprod", "@multi-user"] },
       async ({ admin, secondUser }) => {
         const link =
           await test.step('admin opens the console section "Teams", turns on the link access of the team and creates an invitation link of the team', async () => {
@@ -160,7 +160,7 @@ test.describe("Team settings", { tag: "@team" }, () => {
   test.describe("A revoked invitation link of the console no longer lets people join the team", () => {
     test(
       "A user who follows a revoked invitation link does not join the team",
-      { tag: "@preprod" },
+      { tag: ["@preprod", "@multi-user"] },
       async ({ admin, secondUser }) => {
         const link =
           await test.step('admin opens the console section "Teams", turns on the link access of the team and creates an invitation link of the team', async () => {
@@ -181,7 +181,7 @@ test.describe("Team settings", { tag: "@team" }, () => {
   test.describe("Turning a team's link access off suspends the console's invitation links", () => {
     test(
       "An invitation link of a team without link access no longer works",
-      { tag: "@preprod" },
+      { tag: ["@preprod", "@multi-user"] },
       async ({ admin, secondUser }) => {
         const link =
           await test.step('admin opens the console section "Teams", turns on the link access of the team and creates an invitation link of the team', async () => {

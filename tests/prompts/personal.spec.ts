@@ -159,7 +159,7 @@ test.describe("Personal prompts", { tag: "@prompt" }, () => {
   test.describe("Favorites belong to each user", { tag: "@team" }, () => {
     test(
       "A second user does not see the first user's favorite",
-      { tag: "@preprod" },
+      { tag: ["@preprod", "@multi-user"] },
       async ({ admin, secondUser, teams, prompts }) => {
         const team =
           await test.step("admin creates a team with secondUser as a member, in which admin also holds the Editor role", () =>

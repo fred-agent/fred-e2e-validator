@@ -227,6 +227,12 @@ tests, put the tags beside each row and pass them into the test. Reserve
 enter the selection only after review and automation. Preview the resulting
 inventory with the [shared-canary command](README.md#shared-canary).
 
+Also add `@multi-user` to a reviewed case or parameter row when setup,
+actions, assertions or cleanup require two distinct identities. For example,
+a browsing case needs the tag if its shared setup adds a second user to a
+team. A platform administrator creating and managing their own temporary
+team can use one identity throughout.
+
 ## Timeouts and budgets
 
 - A test runs with the default timeout, `testTimeout` of `env-config.json`.

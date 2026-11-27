@@ -21,7 +21,7 @@ test.describe(
     test.describe("An editor adds documents to the team's resources", () => {
       test(
         "A file stored by an editor is listed in a folder of the team",
-        { tag: "@preprod" },
+        { tag: ["@preprod", "@multi-user"] },
         async ({ admin, folders }) => {
           const folder =
             await test.step("admin creates a folder in the team", () =>
@@ -39,7 +39,7 @@ test.describe(
     test.describe("A member without the Editor role can only download the team's documents", () => {
       test(
         'A reader sees only "Download" for a document',
-        { tag: "@preprod" },
+        { tag: ["@preprod", "@multi-user"] },
         async ({ admin, secondUser, folders }) => {
           const folder =
             await test.step("admin creates a folder in the team", () =>
@@ -61,7 +61,7 @@ test.describe(
 
       test(
         'A reader does not see "New folder" or "Add files"',
-        { tag: "@preprod" },
+        { tag: ["@preprod", "@multi-user"] },
         async ({ secondUser }) => {
           await test.step("secondUser opens the resources of the team as a member", () =>
             secondUser.flows.openResourcesAsMember(team));

@@ -16,6 +16,13 @@ A reviewer traces each case's setup, actions, visits and cleanup before adding
 `@preprod` to its declaration. For parameterized cases each row states its own
 tags. Future cases therefore enter the selection through an explicit decision.
 
+A reviewed case also carries `@multi-user` when any step, including a
+fixture or hook, needs two distinct identities. For example, adding a user
+to a team already administered by the creator needs a second identity.
+Opening several contexts for the same account does not. An installation
+with one dedicated platform administrator and one worker can select
+`@preprod` and exclude `@multi-user` through the run profile.
+
 Cases may change a dedicated account's profile and personal space, create teams
 and resources, and manage dedicated users' membership in those teams. Shared
 feature grants, platform writes and marketplace publication, likes and imports

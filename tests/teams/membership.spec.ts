@@ -14,7 +14,7 @@ test.describe("Team membership", { tag: "@team" }, () => {
   test.describe("A team admin adds users to the team", () => {
     test(
       "An added user is listed as a member",
-      { tag: "@preprod" },
+      { tag: ["@preprod", "@multi-user"] },
       async ({ admin, accounts }) => {
         await test.step("admin opens the members of the team and adds secondUser", async () => {
           await admin.flows.openTeamMembers(team);
@@ -34,7 +34,7 @@ test.describe("Team membership", { tag: "@team" }, () => {
 
     test(
       "An added user finds the team on the home page",
-      { tag: "@preprod" },
+      { tag: ["@preprod", "@multi-user"] },
       async ({ admin, secondUser }) => {
         await test.step("admin opens the members of the team and adds secondUser", async () => {
           await admin.flows.openTeamMembers(team);
@@ -54,7 +54,7 @@ test.describe("Team membership", { tag: "@team" }, () => {
   test.describe("Only members see a team among their spaces", () => {
     test(
       "A user who is not a member does not see the team",
-      { tag: "@preprod" },
+      { tag: ["@preprod", "@multi-user"] },
       async ({ outsider }) => {
         await test.step("outsider loads the home page and does not see the team among their spaces", () =>
           outsider.pages.home.openAndExpectNoSpace(team.name));
@@ -65,7 +65,7 @@ test.describe("Team membership", { tag: "@team" }, () => {
   test.describe("A team admin gives members roles", () => {
     test(
       "A member given the Editor role keeps it",
-      { tag: "@preprod" },
+      { tag: ["@preprod", "@multi-user"] },
       async ({ admin, accounts }) => {
         await test.step("admin opens the members of the team and adds secondUser", async () => {
           await admin.flows.openTeamMembers(team);
@@ -90,7 +90,7 @@ test.describe("Team membership", { tag: "@team" }, () => {
   test.describe("A team admin removes members", () => {
     test(
       "A removed member no longer sees the team",
-      { tag: "@preprod" },
+      { tag: ["@preprod", "@multi-user"] },
       async ({ admin, secondUser }) => {
         await test.step("admin opens the members of the team and adds secondUser", async () => {
           await admin.flows.openTeamMembers(team);
@@ -157,7 +157,7 @@ test.describe("Team membership", { tag: "@team" }, () => {
   test.describe("A member can leave a team", () => {
     test(
       "A member who leaves no longer sees the team",
-      { tag: "@preprod" },
+      { tag: ["@preprod", "@multi-user"] },
       async ({ admin, secondUser }) => {
         await test.step("admin opens the members of the team and adds secondUser", async () => {
           await admin.flows.openTeamMembers(team);
@@ -190,7 +190,7 @@ test.describe("Team membership", { tag: "@team" }, () => {
 
     test(
       "An editor without the Admin role cannot manage members",
-      { tag: "@preprod" },
+      { tag: ["@preprod", "@multi-user"] },
       async ({ admin, secondUser }) => {
         await test.step('admin opens the members of the team, adds secondUser and gives secondUser the role "Editor"', async () => {
           await admin.flows.openTeamMembers(team);

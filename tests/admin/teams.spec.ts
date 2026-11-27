@@ -75,7 +75,7 @@ test.describe("Team administration", { tag: "@admin" }, () => {
   test.describe("A team is created with the administrators the platform admin names", () => {
     test(
       "A team created for another user is administered by that user",
-      { tag: ["@team", "@preprod"] },
+      { tag: ["@team", "@preprod", "@multi-user"] },
       async ({ teams, secondUser }) => {
         const team =
           await test.step("admin creates a team with secondUser as one of its admins", () =>

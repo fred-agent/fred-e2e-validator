@@ -19,9 +19,9 @@ test.describe(
 
     test.describe("A member browses the community's teams, agents and prompts", () => {
       for (const [kind, tags] of [
-        ["Teams", ["@preprod"]],
-        ["Agents", ["@preprod"]],
-        ["Prompts", ["@preprod"]],
+        ["Teams", ["@preprod", "@multi-user"]],
+        ["Agents", ["@preprod", "@multi-user"]],
+        ["Prompts", ["@preprod", "@multi-user"]],
       ] as const) {
         test(
           `A member sees the community's "${kind}"`,
@@ -39,7 +39,7 @@ test.describe(
     test.describe("The marketplace shows a search of teams and of prompts", () => {
       test(
         "A member sees a search of the community's teams",
-        { tag: "@preprod" },
+        { tag: ["@preprod", "@multi-user"] },
         async ({ secondUser }) => {
           await test.step('secondUser loads the home page, opens the marketplace and chooses "Teams"', () =>
             secondUser.pages.marketplace.browse("Teams"));
@@ -50,7 +50,7 @@ test.describe(
 
       test(
         "A member sees a search of the community's prompts",
-        { tag: "@preprod" },
+        { tag: ["@preprod", "@multi-user"] },
         async ({ secondUser }) => {
           await test.step('secondUser loads the home page, opens the marketplace and chooses "Prompts"', () =>
             secondUser.pages.marketplace.browse("Prompts"));
