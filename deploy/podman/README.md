@@ -214,6 +214,10 @@ section "Your activity": add `"@kpi-store"` to `excludeTags` as well.
 - `FRED_IGNORE_HTTPS_ERRORS=true` accepts a certificate an internal
   authority signs, which the image does not trust. Leave it out for a Fred
   with a public certificate.
+- `FRED_IGNORE_THEME_TRANSLATIONS=true` keeps Fred's own labels when the
+  deployment's theme renames them (`theme-translations/en.json` or
+  `fr.json`): the tests look for Fred's own labels. The theme's styles and
+  images still apply. Add it with `-e` when the theme renames labels.
 - `PLAYWRIGHT_HTML_OUTPUT_DIR` and `ZEPHYR_REPORT_DIR` are required: the
   image's own folder is read-only for the run.
 - A long run outlives an SSH session in `tmux`, or with `-d --name fred-e2e`

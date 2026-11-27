@@ -103,6 +103,13 @@ const CUT_OFF_LIMIT_MS = 1_000;
 const UNREADABLE = "a page that could not be read";
 const CLOSED_AT_END = "a page closed at the test's end";
 
+/**
+ * The label overrides of a deployment's theme. With
+ * FRED_IGNORE_THEME_TRANSLATIONS=true they answer an empty object, so Fred
+ * keeps the labels it ships, the ones the tests look for.
+ */
+const THEME_TRANSLATIONS = "**/theme-translations/*.json";
+
 /** Live diagnostics require both browser and API traffic to have stopped. */
 async function isolateForDiagnostics(
   context: BrowserContext,
@@ -315,6 +322,10 @@ export class TestUsers {
       storageState === undefined ? {} : { storageState },
     );
     contexts.push({ label, context });
+    if (process.env.FRED_IGNORE_THEME_TRANSLATIONS === "true")
+      await context.route(THEME_TRANSLATIONS, (route) =>
+        route.fulfill({ json: {} }),
+      );
     context.on("response", (response: Response) => {
       if (response.status() >= 400)
         this.failures.push(
