@@ -7,7 +7,7 @@ test.describe("Home page sections", { tag: "@home" }, () => {
   test.describe("A signed-in user finds Quick access, their activity and trending content on the home page", () => {
     for (const [section, tags] of [
       ["Quick access", ["@preprod"]],
-      ["Your activity", ["@preprod"]],
+      ["Your activity", ["@preprod", "@kpi-store"]],
       ["Trending", ["@preprod"]],
     ] as const) {
       test(
@@ -25,8 +25,8 @@ test.describe("Home page sections", { tag: "@home" }, () => {
 
   test.describe("A user chooses the period of the activity views", () => {
     for (const [view, period, tags] of [
-      ["Your activity", "7d", ["@preprod"]],
-      ["Your activity", "90d", ["@preprod"]],
+      ["Your activity", "7d", ["@preprod", "@kpi-store"]],
+      ["Your activity", "90d", ["@preprod", "@kpi-store"]],
       ["Trending", "7d", ["@preprod"]],
     ] as const) {
       test(

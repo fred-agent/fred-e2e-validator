@@ -20,7 +20,7 @@ test.describe("Team settings", { tag: "@team" }, () => {
       ["Members", ["@preprod"]],
       ["Settings", ["@preprod"]],
       ["Activity", ["@preprod"]],
-      ["Analytics", ["@preprod"]],
+      ["Analytics", ["@preprod", "@kpi-store"]],
       ["Models", ["@model", "@preprod"]],
     ] as const) {
       test(
@@ -75,8 +75,8 @@ test.describe("Team settings", { tag: "@team" }, () => {
 
   test.describe("A team admin sees the team's analytics by topic", () => {
     for (const [topic, tags] of [
-      ["Overview", ["@preprod"]],
-      ["My usage", ["@preprod"]],
+      ["Overview", ["@preprod", "@kpi-store"]],
+      ["My usage", ["@preprod", "@kpi-store"]],
     ] as const) {
       test(
         `A team admin sees the analytics topic "${topic}"`,

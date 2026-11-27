@@ -383,7 +383,9 @@ what the tests created.
   ([grepInvert](https://playwright.dev/docs/api/class-testproject#test-project-grep-invert)),
   and a command-line `--grep-invert` adds to it. A profile excluding
   `@multi-user` and a run selecting `@preprod` together select the cases
-  a single dedicated platform administrator can exercise.
+  a single dedicated platform administrator can exercise. Excluding
+  `@kpi-store` leaves out the cases whose views Fred hides without an
+  OpenSearch KPI store.
 - **`sign-in.json`** is read once and parsed with a strict `zod` schema
   ([zod: unions](https://zod.dev/api#unions)); README's
   [sign-in.json](README.md#sign-injson) gives its steps and its limits. Global
