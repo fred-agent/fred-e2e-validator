@@ -8,9 +8,9 @@ import { test } from "../../e2e-framework/fixtures/test.ts";
 test.describe("Platform analytics", { tag: "@admin" }, () => {
   test.describe("A platform admin sees the platform's analytics by topic", () => {
     for (const [topic, tags] of [
-      ["Overview", ["@preprod"]],
-      ["Adoption", ["@preprod"]],
-      ["Technical", ["@preprod"]],
+      ["Overview", ["@preprod", "@kpi-store"]],
+      ["Adoption", ["@preprod", "@kpi-store"]],
+      ["Technical", ["@preprod", "@kpi-store"]],
     ] as const) {
       test(
         `A platform admin sees the analytics topic "${topic}"`,
@@ -30,7 +30,7 @@ test.describe("Platform analytics", { tag: "@admin" }, () => {
   test.describe("A platform admin sees an export of the analytics", () => {
     test(
       'A platform admin sees "Export" on the analytics page',
-      { tag: "@preprod" },
+      { tag: ["@preprod", "@kpi-store"] },
       async ({ admin }) => {
         await test.step('admin opens the console section "Analytics"', () =>
           admin.flows.openConsoleSection("Analytics"));
@@ -63,7 +63,7 @@ test.describe("Platform analytics", { tag: "@admin" }, () => {
   test.describe("An export holds the analytics of the chosen period and scope", () => {
     test(
       "An export of the last 7 days is a workbook",
-      { tag: "@preprod" },
+      { tag: ["@preprod", "@kpi-store"] },
       async ({ admin }) => {
         await test.step('admin opens the console section "Analytics" and chooses the period "Last 7 days"', async () => {
           await admin.flows.openConsoleSection("Analytics");
