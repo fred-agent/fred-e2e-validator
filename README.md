@@ -258,6 +258,9 @@ A deployment **without an OpenSearch KPI store** hides Admin › Analytics, a
 team's "Analytics" and the home section "Your activity". Add `"@kpi-store"`
 to `excludeTags` there to leave out the cases that open them.
 
+A platform that offers **a single theme** shows no "UI theme" select in the
+profile. Add `"@theme-choice"` to `excludeTags` there.
+
 Set `space` in `test-data/test-data.json` to the dedicated accounts' personal
 space and give each active worker exclusive use of its account set. These
 cases may create teams visible to platform administrators, change membership

@@ -110,8 +110,7 @@ export class ProfilePage {
 
   /**
    * A text of the profile. The profile has no landmark around the account's
-   * username, full name and email, so a text is found on the whole page; the
-   * accounts' usernames differ from their emails.
+   * username, full name and email, so a text is found on the whole page.
    */
   private text(text: string): Locator {
     return this.page.getByText(text, { exact: true });
@@ -136,11 +135,15 @@ export class ProfilePage {
     await expect(this.title).toBeVisible();
   }
 
-  /** Expects the profile of this account, shown by its email. */
+  /**
+   * Expects the profile of this account, shown by its email. An identity
+   * provider whose username is the email, such as Microsoft Entra ID with a
+   * UPN that is the address, shows that text twice.
+   */
   @step
   async expectAccount(account: Account): Promise<void> {
     await this.expectShown();
-    await expect(this.text(account.email)).toBeVisible();
+    await expect(this.text(account.email).first()).toBeVisible();
   }
 
   /**

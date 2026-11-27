@@ -57,13 +57,22 @@ test.describe("Profile", { tag: "@account" }, () => {
 
   test.describe("The profile shows the interface settings", () => {
     test(
-      "A member sees the theme, mode and language settings",
-      { tag: "@preprod" },
+      "A member sees the theme select",
+      { tag: ["@preprod", "@theme-choice"] },
       async ({ member }) => {
         await test.step("member opens their profile from the account menu", () =>
           member.flows.openProfile());
         await test.step('member sees the "UI theme" select', () =>
           member.pages.profile.expectSetting("theme"));
+      },
+    );
+
+    test(
+      "A member sees the mode and language settings",
+      { tag: "@preprod" },
+      async ({ member }) => {
+        await test.step("member opens their profile from the account menu", () =>
+          member.flows.openProfile());
         await test.step('member sees the mode choices "Light", "Dark" and "System"', () =>
           member.pages.profile.expectSetting("mode"));
         await test.step('member sees the language choices "French" and "English"', () =>
@@ -89,21 +98,30 @@ test.describe("Profile", { tag: "@account" }, () => {
 
   test.describe("A user's theme and mode are kept", () => {
     test(
-      "A chosen theme and mode are kept after the page is opened again",
-      { tag: "@preprod" },
+      "A chosen theme is kept after the page is opened again",
+      { tag: ["@preprod", "@theme-choice"] },
       async ({ member, preferences }) => {
         const theme =
           await test.step("member chooses another theme in their profile and leaves it", () =>
             preferences.chooseAnotherTheme(member));
+        await test.step("member opens their profile again from the account menu", () =>
+          member.flows.openProfile());
+        await test.step("member sees the theme they chose", () =>
+          member.pages.profile.expectTheme(theme));
+      },
+    );
+
+    test(
+      "A chosen mode is kept after the page is opened again",
+      { tag: "@preprod" },
+      async ({ member, preferences }) => {
         const mode =
           await test.step("member chooses another mode in their profile and leaves it", () =>
             preferences.chooseAnotherMode(member));
         await test.step("member opens their profile again from the account menu", () =>
           member.flows.openProfile());
-        await test.step("member sees the theme and the mode they chose", async () => {
-          await member.pages.profile.expectTheme(theme);
-          await member.pages.profile.expectMode(mode);
-        });
+        await test.step("member sees the mode they chose", () =>
+          member.pages.profile.expectMode(mode));
       },
     );
   });

@@ -201,7 +201,9 @@ switching users or a team with a second member. Keep `--grep @preprod`: the
 other tests are not classified for one account.
 
 A Fred without an OpenSearch KPI store hides its analytics and the home
-section "Your activity": add `"@kpi-store"` to `excludeTags` as well.
+section "Your activity": add `"@kpi-store"` to `excludeTags` as well. A
+platform that offers a single theme hides the "UI theme" select: add
+`"@theme-choice"`.
 
 - The command replaces the image's default, the run page's service, with
   one Playwright run. Arguments after `run` go to `playwright test`, such as
