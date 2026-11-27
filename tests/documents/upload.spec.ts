@@ -146,17 +146,17 @@ test.describe("Uploading documents", { tag: "@document" }, () => {
     );
   });
 
-  test.describe("A new file is marked as uploaded", () => {
+  test.describe("A new file uploaded without processing waits to be processed", () => {
     test(
-      'A new file is marked "Uploaded"',
+      'A new file uploaded without processing is marked "Pending"',
       { tag: "@preprod" },
       async ({ member }) => {
         await test.step('member uploads "e2e-sample.txt" into the folder without processing', async () => {
           await member.flows.openFolder(folder);
           await member.pages.resources.upload("e2e-sample.txt", "Upload only");
         });
-        await test.step('member sees "e2e-sample.txt" marked "Uploaded" in the folder', () =>
-          member.pages.resources.expectMarkedUploaded("e2e-sample.txt"));
+        await test.step('member sees "e2e-sample.txt" with the status "Pending" in the folder', () =>
+          member.pages.resources.expectStatus("e2e-sample.txt", "Pending"));
       },
     );
   });

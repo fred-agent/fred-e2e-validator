@@ -203,7 +203,7 @@ other tests are not classified for one account.
 A Fred without an OpenSearch KPI store hides its analytics and the home
 section "Your activity": add `"@kpi-store"` to `excludeTags` as well. A
 platform that offers a single theme hides the "UI theme" select: add
-`"@theme-choice"`.
+`"@theme-choice"`. Without team applications, add `"@apps"`.
 
 - The command replaces the image's default, the run page's service, with
   one Playwright run. Arguments after `run` go to `playwright test`, such as
@@ -235,6 +235,27 @@ platform that offers a single theme hides the "UI theme" select: add
 
 Each run replaces the reports of the previous one: copy `reports/` first to
 keep them.
+
+### Copy the reports to a workstation
+
+On the host, pack the reports of the run with its date:
+
+```bash
+cd ~/fred-e2e && tar czf "reports-$(date +%F-%H%M).tgz" reports
+```
+
+On the workstation, copy and unpack the archive, then open the HTML report:
+
+```bash
+scp '<user>@<host>:~/fred-e2e/reports-*.tgz' .
+tar xzf reports-<date>.tgz
+```
+
+- Open `reports/html/index.html` in a browser; it needs no server.
+- Windows has `scp` and `tar` in PowerShell, with the same commands. A
+  graphical client such as WinSCP copies the folder `~/fred-e2e/reports` too.
+- `npx playwright show-report reports/html`, where Node is installed, serves
+  the report and its traces.
 
 ## Troubleshooting
 

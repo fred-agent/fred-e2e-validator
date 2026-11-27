@@ -41,7 +41,7 @@ test.describe("Team space pages", { tag: ["@space", "@team"] }, () => {
   test.describe("A team space has an Apps page", () => {
     test(
       "An editor sees the Apps page of the team space",
-      { tag: "@preprod" },
+      { tag: ["@preprod", "@apps"] },
       async ({ admin }) => {
         await test.step('admin opens "Apps" of the team', () =>
           admin.flows.openSpaceSection(team, "Apps"));

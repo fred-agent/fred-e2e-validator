@@ -354,12 +354,6 @@ export class ResourcesPage {
     await this.table.expectIncludedInSearch(name);
   }
 
-  /** Expects a document's row to say that the document was uploaded. */
-  @step
-  async expectMarkedUploaded(name: string): Promise<void> {
-    await this.table.expectMarkedUploaded(name);
-  }
-
   @step
   async expectExcludedFromSearch(name: string): Promise<void> {
     await this.table.expectExcludedFromSearch(name);

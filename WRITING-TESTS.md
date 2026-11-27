@@ -208,6 +208,7 @@ A section may contain tests that use several accounts.
 | `@model-discovery` | Cases that open Models in Admin › Features, including its model defaults. These cases stay outside `@model` and `@preprod`. |
 | `@ppt`, `@docx`    | Configuration of the presentation and Word document capabilities. The Word document cases check the agent's saved options.  |
 | `@csv`             | CSV processing and preview                                                                                                  |
+| `@apps`            | A team space's "Apps" page, which Fred lists only when applications are enabled and the team has one                        |
 | `@theme-choice`    | The profile's "UI theme" select, which Fred shows only when the platform offers more than one theme                         |
 | `@kpi-store`       | Views that read KPI presets from an OpenSearch KPI store: analytics, a team's usage and the home section "Your activity"    |
 | `@smoke`           | The quick sign-in check                                                                                                     |

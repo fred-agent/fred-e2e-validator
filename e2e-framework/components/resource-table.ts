@@ -100,14 +100,6 @@ export class ResourceTable {
     ).toBeVisible(timeout === undefined ? {} : { timeout });
   }
 
-  /** Expects a document's row to show where the document came from: "Uploaded". */
-  @step
-  async expectMarkedUploaded(name: string): Promise<void> {
-    await expect(
-      this.row(name).getByText("Uploaded", { exact: true }),
-    ).toBeVisible();
-  }
-
   /** Expects the mark of a document that agents do not search. */
   @step
   async expectExcludedFromSearch(name: string): Promise<void> {

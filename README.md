@@ -261,6 +261,9 @@ to `excludeTags` there to leave out the cases that open them.
 A platform that offers **a single theme** shows no "UI theme" select in the
 profile. Add `"@theme-choice"` to `excludeTags` there.
 
+Fred lists a team space's **"Apps"** page only when applications are enabled
+and the team has at least one. Add `"@apps"` to `excludeTags` elsewhere.
+
 Set `space` in `test-data/test-data.json` to the dedicated accounts' personal
 space and give each active worker exclusive use of its account set. These
 cases may create teams visible to platform administrators, change membership

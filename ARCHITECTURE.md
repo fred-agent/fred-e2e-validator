@@ -386,7 +386,8 @@ what the tests created.
   a single dedicated platform administrator can exercise. Excluding
   `@kpi-store` leaves out the cases whose views Fred hides without an
   OpenSearch KPI store, and excluding `@theme-choice` the cases that need
-  more than one theme.
+  more than one theme. Excluding `@apps` leaves out the team's "Apps" page,
+  which Fred lists only for a team with an application.
 - **`sign-in.json`** is read once and parsed with a strict `zod` schema
   ([zod: unions](https://zod.dev/api#unions)); README's
   [sign-in.json](README.md#sign-injson) gives its steps and its limits. Global
