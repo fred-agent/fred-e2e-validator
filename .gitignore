@@ -1,0 +1,17 @@
+node_modules/
+
+# Playwright output
+playwright-report/
+test-results/
+blob-report/
+zephyr-report/
+/docker-out/
+
+# Local settings and secrets: never committed
+.env
+
+*.log
+.DS_Store
+
+# The built page; the image builds its own.
+app/ui/dist/

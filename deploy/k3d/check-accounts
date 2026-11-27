@@ -1,0 +1,14 @@
+#!/bin/sh
+
+instance=${FRED:-}
+if [ "${1:-}" = --default ]; then
+  instance=default
+fi
+
+if [ -n "$instance" ] && kubectl --context k3d-fred --namespace "fred-$instance" \
+    get secret fred-e2e-tests-accounts --output=name >/dev/null 2>&1; then
+  exit 0
+fi
+
+echo 'Account configuration could not be verified.' >&2
+exit 1

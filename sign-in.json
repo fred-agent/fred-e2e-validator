@@ -1,0 +1,5 @@
+[
+  { "fill": "Username or email", "with": "username" },
+  { "fill": "Password", "with": "password" },
+  { "click": "Sign In" }
+]

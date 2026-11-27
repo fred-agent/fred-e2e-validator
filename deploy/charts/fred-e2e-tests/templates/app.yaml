@@ -1,0 +1,200 @@
+{{- /*
+The service serves the run page and team routes and starts Playwright as a
+child process. The gateway reaches the Service by its release name in the
+release namespace. The release mounts its test configuration, and its sign-in
+steps when it sets them, from ConfigMaps. Restart the StatefulSet to apply a
+ConfigMap-only change.
+*/ -}}
+{{- $name := .Release.Name | trunc 63 | trimSuffix "-" -}}
+{{- $secret := required "accounts.existingSecret is required: the Secret with the synthetic accounts" .Values.accounts.existingSecret -}}
+{{- $envConfig := required "envConfig is required: the release's env-config.json, every key of its schema" .Values.envConfig | default dict -}}
+{{- range list "fredBaseUrl" "workers" "browser" "testTimeout" "expectTimeout" "factoryFixtureTimeout" "excludeTags" -}}
+{{- if not (hasKey $envConfig .) -}}
+{{- fail (printf "envConfig.%s is required: envConfig holds every key of env-config.json" .) -}}
+{{- end -}}
+{{- end -}}
+{{- $url := urlParse (required "envConfig.fredBaseUrl is required: the Fred the tests open" $envConfig.fredBaseUrl) -}}
+{{- $hostPort := splitList ":" $url.host -}}
+{{- $hostname := first $hostPort -}}
+{{- $port := ternary (last $hostPort) (ternary "443" "80" (eq $url.scheme "https")) (eq (len $hostPort) 2) -}}
+{{- $relay := and .Values.localRelay.ingress (hasSuffix ".localhost" $hostname) -}}
+{{- if and $relay (eq $port "8080") -}}
+{{- fail "envConfig.fredBaseUrl's port 8080 is the service's own port: the relay cannot listen on it. Give Fred another port." -}}
+{{- end -}}
+{{- $selector := dict "app.kubernetes.io/name" "fred-e2e-tests" "app.kubernetes.io/instance" .Release.Name -}}
+{{- if .Release.IsUpgrade -}}
+{{- if lookup "apps/v1" "Deployment" .Release.Namespace $name -}}
+{{- fail "Remove the release's Deployment with foreground cascading deletion and wait for its pods to exit before upgrading." -}}
+{{- end -}}
+{{- range (lookup "v1" "Pod" .Release.Namespace "").items -}}
+{{- $labels := .metadata.labels | default dict -}}
+{{- if and (hasKey $labels "pod-template-hash") (eq (get $labels "app.kubernetes.io/name") (get $selector "app.kubernetes.io/name")) (eq (get $labels "app.kubernetes.io/instance") $.Release.Name) -}}
+{{- fail "Wait for the release's Deployment pods to terminate before upgrading." -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ $name }}
+  labels:
+    {{- toYaml $selector | nindent 4 }}
+data:
+  CONTROL_PLANE_URL: {{ .Values.controlPlaneUrl | quote }}
+  RUNS_DIR: /data/runs
+  KEEP_RUNS: {{ .Values.keepRuns | quote }}
+  PORT: "8080"
+  {{- if $relay }}
+  LOCAL_RELAY: {{ printf "%s=%s" $port .Values.localRelay.ingress | quote }}
+  {{- end }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ $name }}-env-config
+  labels:
+    {{- toYaml $selector | nindent 4 }}
+data:
+  env-config.json: |
+    {{- $envConfig | toPrettyJson | nindent 4 }}
+---
+{{- if not (kindIs "invalid" .Values.signIn) }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ $name }}-sign-in
+  labels:
+    {{- toYaml $selector | nindent 4 }}
+data:
+  sign-in.json: |
+    {{- .Values.signIn | toPrettyJson | nindent 4 }}
+---
+{{- end }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ $name }}-runs
+  labels:
+    {{- toYaml $selector | nindent 4 }}
+spec:
+  accessModes: [ReadWriteOnce]
+  {{- with .Values.storage.storageClass }}
+  storageClassName: {{ . | quote }}
+  {{- end }}
+  resources:
+    requests:
+      storage: {{ .Values.storage.size }}
+---
+apiVersion: apps/v1
+# One run at a time is the rule: a StatefulSet starts a pod only once the one
+# it replaces is gone, on an upgrade as on a deletion.
+kind: StatefulSet
+metadata:
+  name: {{ $name }}
+  labels:
+    {{- toYaml $selector | nindent 4 }}
+spec:
+  serviceName: {{ $name }}
+  replicas: 1
+  # An upgrade also replaces a pod that never became ready.
+  podManagementPolicy: Parallel
+  selector:
+    matchLabels:
+      {{- toYaml $selector | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- toYaml $selector | nindent 8 }}
+    spec:
+      # The pause container, not Node, is PID 1 and reaps the run's processes.
+      shareProcessNamespace: true
+      # The worst case of a test's teardown, 3 × factoryFixtureTimeout +
+      # 3 × testTimeout, in seconds rounded up, plus 60: longer than the
+      # service's stop grace, which waits that worst case plus 30 seconds.
+      terminationGracePeriodSeconds: {{ add (div (add (mul 3 $envConfig.factoryFixtureTimeout) (mul 3 $envConfig.testTimeout) 999) 1000) 60 }}
+      # Nothing in the pod calls the Kubernetes API.
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1001
+        runAsGroup: 1001
+        fsGroup: 1001
+        seccompProfile:
+          type: RuntimeDefault
+      {{- if $relay }}
+      # Resolve the target host to the relay for requests from the service.
+      hostAliases:
+        - ip: 127.0.0.1
+          hostnames: [{{ $hostname | quote }}]
+      {{- end }}
+      containers:
+        - name: service
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: ["node", "app/service/main.ts"]
+          ports:
+            - name: http
+              containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: {{ $name }}
+            - secretRef:
+                name: {{ $secret }}
+          readinessProbe:
+            httpGet: { path: /healthz, port: http }
+            periodSeconds: 10
+          livenessProbe:
+            httpGet: { path: /healthz, port: http }
+            periodSeconds: 20
+            failureThreshold: 6
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities: { drop: [ALL] }
+          volumeMounts:
+            - { name: data, mountPath: /data }
+            # The release's env-config.json over the image's.
+            - name: env-config
+              mountPath: /app/env-config.json
+              subPath: env-config.json
+              readOnly: true
+            {{- if not (kindIs "invalid" .Values.signIn) }}
+            # The release's sign-in.json over the image's.
+            - name: sign-in
+              mountPath: /app/sign-in.json
+              subPath: sign-in.json
+              readOnly: true
+            {{- end }}
+            # Chromium needs more shared memory than a container's default.
+            - { name: shm, mountPath: /dev/shm }
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: {{ $name }}-runs
+        - name: env-config
+          configMap:
+            name: {{ $name }}-env-config
+        {{- if not (kindIs "invalid" .Values.signIn) }}
+        - name: sign-in
+          configMap:
+            name: {{ $name }}-sign-in
+        {{- end }}
+        - name: shm
+          emptyDir: { medium: Memory, sizeLimit: 1Gi }
+---
+# The gateway forwards requests to this cluster-internal Service.
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $name }}
+  labels:
+    {{- toYaml $selector | nindent 4 }}
+spec:
+  type: ClusterIP
+  selector:
+    {{- toYaml $selector | nindent 4 }}
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http

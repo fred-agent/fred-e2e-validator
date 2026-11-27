@@ -1,0 +1,38 @@
+{
+  "name": "fred-e2e-tests",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Playwright end-to-end tests for Fred test environments.",
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "type-check": "tsc --noEmit && tsc --noEmit -p app/ui",
+    "lint": "eslint --max-warnings=0 .",
+    "format-check": "prettier --check .",
+    "format-fix": "prettier --write .",
+    "build:ui": "vite build --config app/ui/vite.config.ts"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@fred-oss/design-tokens": "0.1.1-alpha.0",
+    "@fred-oss/iframe-sdk": "0.1.1-alpha.1",
+    "@fred-oss/ui": "0.1.1-alpha.0",
+    "@types/node": "^24.19.2",
+    "@types/react": "19.2.7",
+    "@types/react-dom": "19.2.3",
+    "@vitejs/plugin-react": "4.7.0",
+    "eslint": "^10.14.0",
+    "prettier": "^3.9.10",
+    "react": "19.2.4",
+    "react-dom": "19.2.4",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.72.2",
+    "vite": "6.4.5"
+  },
+  "dependencies": {
+    "@playwright/test": "1.65.0",
+    "zod": "^4.6.7"
+  }
+}

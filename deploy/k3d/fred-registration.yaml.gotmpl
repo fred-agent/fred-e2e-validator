@@ -1,0 +1,30 @@
+# The host chart uses these values to register the run page in the catalog
+# and configure its gateway routes. A platform administrator can override
+# the default access for each team. The catalog version is independent of
+# the chart version.
+applications:
+  control-plane-backend:
+    configuration:
+      platform:
+        frontend:
+          feature_flags:
+            # Enable the host's application routes.
+            enableApplications: true
+
+registrations:
+  applications:
+    e2e-tests:
+      ui_prefix: /apps/e2e-tests
+      version: 0.1.0
+      icon: play_circle
+      display_name:
+        en: "End-to-end tests"
+        fr: "Tests de bout en bout"
+      description:
+        en: "Run the end-to-end tests against this Fred and read their reports."
+        fr: "Lancer les tests de bout en bout sur ce Fred et lire leurs rapports."
+      enabled: true
+      gateway:
+        ui_upstream: "http://fred-e2e-tests.fred-{{ .Environment.Name }}.svc.cluster.local:8080"
+        service_upstream: "http://fred-e2e-tests.fred-{{ .Environment.Name }}.svc.cluster.local:8080"
+        service_required: true

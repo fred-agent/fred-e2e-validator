@@ -1,0 +1,12 @@
+.git
+.env
+.idea
+.local
+.local-stack
+node_modules
+playwright-report
+test-results
+blob-report
+zephyr-report
+docker-out
+app/ui/dist

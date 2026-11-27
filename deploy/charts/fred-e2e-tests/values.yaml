@@ -1,0 +1,39 @@
+# Each release must supply the target HTTP or HTTPS origin, workers, browser,
+# testTimeout, expectTimeout, factoryFixtureTimeout and excludeTags in envConfig.
+# For a subdomain of localhost, also set localRelay.ingress.
+
+# The release's sign-in.json: the steps of the environment's sign-in pages, each
+# text in quotes. Null keeps the image's file.
+signIn: null
+
+# The control plane authorizes requests for team data. Its short name resolves
+# when both services share a namespace.
+controlPlaneUrl: http://control-plane-backend:8222
+
+image:
+  repository: fred-e2e-tests
+  tag: "0.3.0"
+  pullPolicy: IfNotPresent
+
+accounts:
+  # Required: the Secret with the synthetic accounts, ACCOUNT_<NAME>_USERNAME,
+  # _PASSWORD and _EMAIL, with _2 for the second worker's set.
+  existingSecret: ""
+
+# How many of each team's newest finished runs are kept with their logs and
+# reports; older ones are deleted when a run ends and when the service starts.
+keepRuns: 10
+
+localRelay:
+  # For a subdomain of localhost, set the ingress host and port. The relay
+  # forwards the browser's loopback connection to that ingress.
+  ingress: ""
+
+storage:
+  size: 2Gi
+  # Empty uses the cluster's default storage class.
+  storageClass: ""
+
+resources:
+  requests: { cpu: 500m, memory: 1Gi }
+  limits: { memory: 3Gi }
