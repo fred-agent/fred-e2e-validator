@@ -23,9 +23,8 @@ the sign-in pages that `sign-in.json` describes. Each account has a role:
 | `secondUser` | A second user with no platform role                                 |
 | `outsider`   | A user never added to any team                                      |
 
-With `"excludeTags": ["@extended"]`, the default, the tests use only `admin`
-and `member`: one platform administrator may stand for all four names. Use
-four separate accounts to run the `@extended` tests.
+The full suite and the shared-canary selection (`@preprod`) use four
+separate accounts, one for each name.
 
 ### In the identity provider (Microsoft Entra ID)
 
@@ -85,9 +84,7 @@ ACCOUNT_OUTSIDER_EMAIL=
 
 `_USERNAME` is what the sign-in page takes (the UPN for Entra) and what
 Fred's user picker shows in parentheses; `_EMAIL` the address Fred's account
-menu shows. Four separate accounts run every test; one account standing for
-all four names repeats its values in each group and runs only the tests
-without `@extended`.
+menu shows. Each group holds a separate account.
 
 ## 2. The run folder
 
@@ -111,8 +108,7 @@ It holds `e2e.env` and three files mounted over the image's own.
 }
 ```
 
-`excludeTags`: `@model` leaves out the tests that call a language model;
-add `@extended` when one account stands for all four names.
+`excludeTags`: `@model` leaves out the tests that call a language model.
 
 `sign-in.json`, the steps of the sign-in pages. The browser of the tests is
 in English, so Microsoft's pages are too, whatever the tenant's language:
