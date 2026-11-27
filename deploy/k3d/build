@@ -7,7 +7,7 @@ root="$(cd "$(dirname "$0")/../.." && pwd)"
 : "${K3D_APP_OUT:?run through make k3d-app in the deployment factory}"
 repository=fred-e2e-tests
 
-docker build --file "$root/deploy/Dockerfile" --tag "$repository:build" "$root"
+docker build --platform linux/amd64 --file "$root/deploy/Dockerfile" --tag "$repository:build" "$root"
 # Docker's content id names the image, so a changed image always rolls out.
 id="$(docker image inspect --format '{{.Id}}' "$repository:build")"
 tag="k3d-${id:7:12}"

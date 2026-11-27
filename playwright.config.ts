@@ -23,6 +23,7 @@ const envConfig = readEnvConfig();
 const progressFile = process.env.RUN_PROGRESS_FILE?.trim();
 
 const DEVICES: Readonly<Record<Browser, string>> = {
+  msedge: "Desktop Edge",
   chromium: "Desktop Chrome",
   firefox: "Desktop Firefox",
   webkit: "Desktop Safari",
@@ -79,7 +80,10 @@ export default defineConfig({
   projects: [
     {
       name: envConfig.browser,
-      use: { ...devices[DEVICES[envConfig.browser]] },
+      use: {
+        ...devices[DEVICES[envConfig.browser]],
+        ...(envConfig.browser === "msedge" ? { channel: "msedge" } : {}),
+      },
       ...(grepInvert ? { grepInvert } : {}),
     },
   ],

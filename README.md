@@ -29,8 +29,9 @@ openspec/                       specifications and changes
 ## Set up
 
 Needs Node 24 or later, a Fred test environment and its synthetic accounts.
-Install the locked dependencies and the browser `env-config.json` names
-(downloaded once):
+Install the locked dependencies and the browser selected in `env-config.json`.
+The default is Microsoft Edge Stable. A local run on macOS uses the native
+browser.
 
 ```bash
 make install
@@ -78,7 +79,7 @@ tests. The committed file:
 {
   "fredBaseUrl": "http://localhost:8080",
   "workers": 1,
-  "browser": "chromium",
+  "browser": "msedge",
   "testTimeout": 120000,
   "expectTimeout": 15000,
   "factoryFixtureTimeout": 120000,
@@ -90,7 +91,7 @@ tests. The committed file:
 | ----------------------- | ------------------------------------------------------------------------- |
 | `fredBaseUrl`           | The address of the Fred test environment, an http or https origin         |
 | `workers`               | The number of workers, and so of account sets                             |
-| `browser`               | `chromium`, `firefox` or `webkit`; only Chromium is verified              |
+| `browser`               | `msedge` (default), `chromium`, `firefox` or `webkit`                     |
 | `testTimeout`           | The test timeout, in milliseconds                                         |
 | `expectTimeout`         | The timeout of a web-first assertion and of an action, in milliseconds    |
 | `factoryFixtureTimeout` | The timeout of each factory fixture's setup and teardown, in milliseconds |
@@ -104,6 +105,9 @@ configuration, naming the file and the key, and so does a
 their margin of 10 seconds.
 No variable overrides these values; one run's options are Playwright's
 command line.
+
+To switch browsers locally, set `browser` and run `make browsers` if that
+browser is missing. The same test command and tag filters apply.
 
 ## sign-in.json
 
@@ -289,6 +293,13 @@ applications to a local k3d cluster. `make ui` builds the run page with
 Vite and `make image` builds the image with Docker, to check them locally;
 the deployment factory's `make k3d-app` builds both itself, and the
 Dockerfile builds the run page into the image.
+
+The image includes Edge Stable, Chromium, Firefox and WebKit. A direct
+container run reads `/app/env-config.json`, which can be mounted at run time.
+Helm mounts the release's `envConfig` there. The local k3d profile selects
+`chromium`. The image targets Linux AMD64, where the Edge package is
+available. Docker on Apple Silicon needs AMD64 emulation to build or run
+the image. Use Linux AMD64 nodes for native cluster runs.
 
 ```bash
 make ui

@@ -1,7 +1,7 @@
 # The service, the support code, the tests and the run page in one image, on
 # Playwright's own image, whose browsers match the pinned @playwright/test.
 # Use the repository root as the build context.
-ARG PLAYWRIGHT_IMAGE=mcr.microsoft.com/playwright:v1.65.0-noble@sha256:714043ec4d54008d194a4b3835bc2a1156c51862d8bb45d72bea414f0ce9ed61
+ARG PLAYWRIGHT_IMAGE=mcr.microsoft.com/playwright:v1.65.0-noble@sha256:9beb546099e11f52d62e505537914870e01a67e0e6b00ae41da4775324e73dbe
 
 # Build the embedded run page with its development dependencies.
 FROM ${PLAYWRIGHT_IMAGE} AS page
@@ -19,6 +19,7 @@ FROM ${PLAYWRIGHT_IMAGE}
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci --omit=dev --ignore-scripts
+RUN npx playwright install msedge && chown pwuser /app
 COPY playwright.config.ts tsconfig.json env-config.json sign-in.json ./
 COPY e2e-framework ./e2e-framework
 COPY test-data ./test-data

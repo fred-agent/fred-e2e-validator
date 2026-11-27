@@ -21,6 +21,9 @@ and `excludeTags` as its `grepInvert`
 ([test configuration](https://playwright.dev/docs/test-configuration),
 [projects](https://playwright.dev/docs/test-projects)).
 
+- `msedge` selects the `Desktop Edge` device descriptor and the stable
+  Edge channel. The shipped profile selects Edge. A profile can also
+  select bundled Chromium, Firefox or WebKit.
 - `locale: "en-US"` is written in `use`: the page objects match English
   labels, and Fred takes its language from the browser when an account has
   no saved preference
@@ -538,7 +541,8 @@ the termination grace period derive from the worst case of a teardown
 - **The image** is built on Playwright's own image at the pinned version
   ([Docker](https://playwright.dev/docs/docker)) and holds the service, the
   support code, the tests, `test-data/`, `env-config.json`, `sign-in.json` and
-  the built run page. Its build runs
+  the built run page. The Linux AMD64 runtime adds Microsoft Edge Stable
+  alongside the bundled Chromium, Firefox and WebKit browsers. Its build runs
   `npx playwright test --list --reporter=list`, so a test file that does not
   load fails the build and is named.
 - **The chart** `fred-e2e-tests` requires `envConfig` in its values, every

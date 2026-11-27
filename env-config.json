@@ -1,7 +1,7 @@
 {
   "fredBaseUrl": "http://localhost:8080",
   "workers": 1,
-  "browser": "chromium",
+  "browser": "msedge",
   "testTimeout": 120000,
   "expectTimeout": 15000,
   "factoryFixtureTimeout": 120000,

@@ -68,7 +68,7 @@ ui: ## Build the embedded run page with Vite
 
 .PHONY: image
 image: ## Build the image of the service, the tests and the run page
-	docker build --file deploy/Dockerfile --tag $(IMAGE) .
+	docker build --platform linux/amd64 --file deploy/Dockerfile --tag $(IMAGE) .
 
 .PHONY: k3d-accounts
 k3d-accounts: SHELL := /bin/bash

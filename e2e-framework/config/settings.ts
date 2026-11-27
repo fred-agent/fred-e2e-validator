@@ -13,7 +13,7 @@ export const ENV_CONFIG_FILE = "env-config.json";
 /** Most parallel workers allowed; each needs its own account set. */
 export const MAX_WORKERS = 16;
 
-export const BROWSERS = ["chromium", "firefox", "webkit"] as const;
+export const BROWSERS = ["msedge", "chromium", "firefox", "webkit"] as const;
 export type Browser = (typeof BROWSERS)[number];
 
 const milliseconds = z.number().int().min(1);

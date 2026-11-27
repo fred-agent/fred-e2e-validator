@@ -25,7 +25,7 @@ lists the tests, so it needs `.env`, with the accounts, but no running Fred.
 ### Requirement: env-config.json
 
 `env-config.json` SHALL hold `fredBaseUrl`, Fred's address, `workers`,
-`browser` (`chromium`, `firefox` or `webkit`), `testTimeout`,
+`browser` (`msedge` by default, or `chromium`, `firefox` or `webkit`), `testTimeout`,
 `expectTimeout`, `factoryFixtureTimeout` and `excludeTags`. Every key SHALL
 be required and an unknown key rejected, naming the file and the key.
 `fredBaseUrl` SHALL be an http or https origin; a user name, a password, a
